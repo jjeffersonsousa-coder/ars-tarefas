@@ -65,7 +65,7 @@ function RegisterForm() {
     }
 
     // Cria entidade pessoal e perfil via função SECURITY DEFINER
-    const { error: profileError } = await supabase.rpc('create_user_profile', {
+    const { error: profileError } = await (supabase.rpc as any)('create_user_profile', {
       user_id: userId,
       user_name: fullName,
       user_email: email,

@@ -5,19 +5,18 @@ import { NotificationBell } from '@/components/notifications/notification-bell'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { getInitials } from '@/lib/utils'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronDown, LogOut, Settings } from 'lucide-react'
+import { ChevronDown, LogOut, Settings, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { NotificationSetup } from '@/components/notifications/notification-setup'
+import { HelpMenu } from './help-menu'
+import { LayoutToggle } from './layout-toggle'
+import { type MenuStyle } from '@/lib/layout-preferences'
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Administrador',
@@ -33,9 +32,13 @@ const ROLE_COLORS: Record<string, string> = {
 
 interface HeaderProps {
   user: UserProfile
+  menuStyle?: MenuStyle
+  onMenuStyleChange?: (s: MenuStyle) => void
+  sidebarCollapsed?: boolean
+  onToggleSidebar?: () => void
 }
 
-export function Header({ user }: HeaderProps) {
+export function Header({ user, menuStyle = 'sidebar', onMenuStyleChange, sidebarCollapsed, onToggleSidebar }: HeaderProps) {
   const supabase = createClient()
   const router = useRouter()
 
@@ -45,19 +48,37 @@ export function Header({ user }: HeaderProps) {
   }
 
   return (
-    <header className="h-16 border-b border-gray-100 bg-white/80 backdrop-blur-sm flex items-center justify-between px-6 shrink-0 sticky top-0 z-30">
-      <div className="lg:hidden w-10" />
-      <div className="flex-1" />
-
+    <header className="h-16 border-b border-gray-100 bg-white/90 backdrop-blur-sm flex items-center justify-between px-4 sm:px-6 shrink-0 sticky top-0 z-30 shadow-sm">
       <div className="flex items-center gap-3">
+        <button
+          onClick={onToggleSidebar}
+          className="hidden lg:flex p-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-500"
+          title={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
+        >
+          {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+        </button>
+        <div className="lg:hidden w-8" />
+        <div className="hidden sm:block">
+          <p className="text-sm font-semibold text-gray-800">
+            Olá, {user.full_name.split(' ')[0]}! 👋
+          </p>
+          <p className="text-xs text-gray-400">
+            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <HelpMenu />
         <NotificationSetup />
         <NotificationBell userId={user.id} />
-
-        <div className="w-px h-6 bg-gray-200" />
-
+        {onMenuStyleChange && (
+          <LayoutToggle menuStyle={menuStyle} onMenuStyleChange={onMenuStyleChange} />
+        )}
+        <div className="w-px h-6 bg-gray-200 mx-1" />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2">
+            <button className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2">
               <Avatar className="h-8 w-8 ring-2 ring-violet-100">
                 {user.avatar_url && <AvatarImage src={user.avatar_url} alt={user.full_name} />}
                 <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white text-xs font-semibold">
@@ -93,7 +114,7 @@ export function Header({ user }: HeaderProps) {
             <DropdownMenuItem asChild className="rounded-xl cursor-pointer px-3 py-2">
               <Link href="/settings" className="flex items-center gap-2">
                 <Settings className="h-4 w-4 text-gray-500" />
-                Configurações
+                Configurações & Perfil
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="my-1" />

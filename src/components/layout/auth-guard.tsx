@@ -29,7 +29,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
       if (!p) {
         // Cria perfil automaticamente se não existe
-        await supabase.rpc('create_user_profile', {
+        await (supabase.rpc as any)('create_user_profile', {
           user_id: user.id,
           user_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
           user_email: user.email || '',
