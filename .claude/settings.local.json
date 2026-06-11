@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//usr/local/bin/**)",
+      "Read(//Users/jeffersonsantos/.nvm/versions/**)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//Users/jeffersonsantos/**)",
+      "Bash(npx tsc *)",
+      "Bash(\n# Fix activity_tags join type errors with as any cast\nsed -i '' 's/const { data: activity } = await supabase/const { data: activity } = await \\(supabase as any\\)/g' \\\\\n  \"/Users/jeffersonsantos/Desktop/Claude/ARS - Gerenciamento de Tarefas/src/app/\\(app\\)/activities/[id]/page.tsx\" \\\\\n  \"/Users/jeffersonsantos/Desktop/Claude/ARS - Gerenciamento de Tarefas/src/app/\\(app\\)/activities/[id]/edit/page.tsx\"\necho \"done\")",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001/)"
+    ]
+  }
+}
