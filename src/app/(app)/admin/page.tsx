@@ -95,7 +95,7 @@ export default function AdminPage() {
     setCreating(false)
   }
 
-  async function handleAssignUser(userId: string, entityId: string, role: string) {
+  async function handleAssignUser(userId: string, entityId: string, role: 'admin' | 'editor' | 'visualizador') {
     const { error } = await supabase.from('user_profiles').update({ entity_id: entityId, role }).eq('id', userId)
     if (error) { toast.error('Erro: ' + error.message); return }
     toast.success('Usuário atualizado!')
