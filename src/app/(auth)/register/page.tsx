@@ -97,7 +97,7 @@ function RegisterForm() {
       router.push('/dashboard')
       router.refresh()
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Erro ao configurar entidade'
+      const message = err instanceof Error ? err.message : (err as { message?: string })?.message ?? JSON.stringify(err)
       setError(message)
     } finally {
       setLoading(false)
