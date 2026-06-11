@@ -154,7 +154,7 @@ export default function ImportPage() {
   const warnings = validations.filter(v => v.status === 'warning').length
   const valid = validations.filter(v => v.status === 'valid').length
 
-  if (!profile) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-violet-600" /></div>
+  if (!profile) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-700" /></div>
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -175,9 +175,9 @@ export default function ImportPage() {
       <div className="flex items-center gap-2">
         {STEP_LABEL.map((label, i) => (
           <div key={i} className="flex items-center gap-2 flex-1">
-            <div className={cn('flex items-center gap-2 text-sm font-medium', step === i + 1 ? 'text-violet-700' : step > i + 1 ? 'text-emerald-600' : 'text-gray-400')}>
+            <div className={cn('flex items-center gap-2 text-sm font-medium', step === i + 1 ? 'text-blue-800' : step > i + 1 ? 'text-emerald-600' : 'text-gray-400')}>
               <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors',
-                step === i + 1 ? 'border-violet-600 bg-violet-600 text-white' :
+                step === i + 1 ? 'border-blue-700 bg-blue-700 text-white' :
                 step > i + 1 ? 'border-emerald-500 bg-emerald-500 text-white' :
                 'border-gray-300 text-gray-400'
               )}>
@@ -199,7 +199,7 @@ export default function ImportPage() {
             onDrop={handleDrop}
             className={cn(
               'border-2 border-dashed rounded-2xl p-12 text-center transition-colors cursor-pointer',
-              dragging ? 'border-violet-400 bg-violet-50' : 'border-gray-200 hover:border-violet-300 hover:bg-gray-50'
+              dragging ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
             )}
             onClick={() => document.getElementById('file-input')?.click()}
           >
@@ -211,7 +211,7 @@ export default function ImportPage() {
           </div>
           <p className="text-center text-sm text-gray-400">
             Não tem planilha?{' '}
-            <button onClick={downloadTemplate} className="text-violet-600 underline font-medium">Baixe o modelo</button>
+            <button onClick={downloadTemplate} className="text-blue-700 underline font-medium">Baixe o modelo</button>
           </p>
         </div>
       )}
@@ -239,7 +239,7 @@ export default function ImportPage() {
                   <select
                     value={mapping[key] || ''}
                     onChange={(e) => setMapping(m => ({ ...m, [key]: e.target.value || undefined }))}
-                    className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+                    className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                   >
                     <option value="">— Não importar —</option>
                     {headers.map(h => <option key={h} value={h}>{h}</option>)}
@@ -280,7 +280,7 @@ export default function ImportPage() {
 
           <div className="flex justify-between">
             <Button variant="outline" onClick={() => setStep(1)} className="rounded-xl">Voltar</Button>
-            <Button onClick={goToStep3} className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl gap-2">
+            <Button onClick={goToStep3} className="bg-gradient-to-r from-blue-700 to-blue-700 rounded-xl gap-2">
               Próximo <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -349,7 +349,7 @@ export default function ImportPage() {
             <Button
               onClick={handleImport}
               disabled={importing || valid + warnings === 0}
-              className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl gap-2 px-8"
+              className="bg-gradient-to-r from-blue-700 to-blue-700 rounded-xl gap-2 px-8"
             >
               {importing ? <><Loader2 className="h-4 w-4 animate-spin" />Importando...</> : <><Upload className="h-4 w-4" />Importar {valid + warnings} atividades</>}
             </Button>
@@ -381,7 +381,7 @@ export default function ImportPage() {
             <Button variant="outline" onClick={() => { setStep(1); setResult(null); setRawData([]); setMapping({}) }} className="rounded-xl">
               Nova Importação
             </Button>
-            <Button asChild className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl">
+            <Button asChild className="bg-gradient-to-r from-blue-700 to-blue-700 rounded-xl">
               <Link href="/activities">Ver Atividades</Link>
             </Button>
           </div>

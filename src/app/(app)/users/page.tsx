@@ -47,7 +47,7 @@ export default function UsersPage() {
   const isAdmin = profile?.role === 'admin'
 
   const roleColors: Record<string, string> = {
-    admin: 'bg-purple-100 text-purple-800 border-purple-200',
+    admin: 'bg-blue-100 text-blue-800 border-blue-200',
     editor: 'bg-blue-100 text-blue-800 border-blue-200',
     visualizador: 'bg-gray-100 text-gray-700 border-gray-200',
   }

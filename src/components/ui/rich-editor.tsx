@@ -19,7 +19,7 @@ export function RichEditor({ value, onChange, placeholder = 'Escreva aqui...', c
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-violet-600 underline hover:text-violet-800' } }),
+      Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-blue-700 underline hover:text-blue-900' } }),
       Placeholder.configure({ placeholder }),
     ],
     content: value,
@@ -38,7 +38,7 @@ export function RichEditor({ value, onChange, placeholder = 'Escreva aqui...', c
       title={title}
       className={cn(
         'p-1.5 rounded-lg transition-colors text-gray-500 hover:text-gray-900 hover:bg-gray-100',
-        active && 'bg-violet-100 text-violet-700'
+        active && 'bg-blue-100 text-blue-800'
       )}
     >
       {children}

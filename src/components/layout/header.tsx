@@ -25,7 +25,7 @@ const ROLE_LABELS: Record<string, string> = {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: 'bg-violet-100 text-violet-700 border-violet-200',
+  admin: 'bg-blue-100 text-blue-800 border-blue-200',
   editor: 'bg-blue-100 text-blue-700 border-blue-200',
   visualizador: 'bg-gray-100 text-gray-700 border-gray-200',
 }
@@ -78,10 +78,10 @@ export function Header({ user, menuStyle = 'sidebar', onMenuStyleChange, sidebar
         <div className="w-px h-6 bg-gray-200 mx-1" />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2">
-              <Avatar className="h-8 w-8 ring-2 ring-violet-100">
+            <button className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">
+              <Avatar className="h-8 w-8 ring-2 ring-blue-100">
                 {user.avatar_url && <AvatarImage src={user.avatar_url} alt={user.full_name} />}
-                <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white text-xs font-semibold">
+                <AvatarFallback className="bg-gradient-to-br from-blue-600 to-blue-700 text-white text-xs font-semibold">
                   {getInitials(user.full_name)}
                 </AvatarFallback>
               </Avatar>
@@ -95,9 +95,9 @@ export function Header({ user, menuStyle = 'sidebar', onMenuStyleChange, sidebar
           <DropdownMenuContent align="end" className="w-64 rounded-2xl shadow-xl border-gray-100 p-1">
             <DropdownMenuLabel className="px-3 py-2.5">
               <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10 ring-2 ring-violet-100">
+                <Avatar className="h-10 w-10 ring-2 ring-blue-100">
                   {user.avatar_url && <AvatarImage src={user.avatar_url} alt={user.full_name} />}
-                  <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white text-sm font-semibold">
+                  <AvatarFallback className="bg-gradient-to-br from-blue-600 to-blue-700 text-white text-sm font-semibold">
                     {getInitials(user.full_name)}
                   </AvatarFallback>
                 </Avatar>

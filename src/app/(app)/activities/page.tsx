@@ -136,7 +136,7 @@ export default function ActivitiesPage() {
             </Button>
           )}
           {canEdit && (
-            <Button asChild className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-md shadow-violet-200 rounded-xl">
+            <Button asChild className="bg-gradient-to-r from-blue-700 to-blue-700 hover:from-blue-800 hover:to-blue-800 shadow-md shadow-blue-200 rounded-xl">
               <Link href="/activities/new"><Plus className="h-4 w-4 mr-2" />Nova Atividade</Link>
             </Button>
           )}
@@ -156,7 +156,7 @@ export default function ActivitiesPage() {
             className="border-0 shadow-none focus-visible:ring-0 p-0 text-sm"
             disabled={quickSaving}
           />
-          {quickSaving && <Loader2 className="h-4 w-4 animate-spin text-violet-500 shrink-0" />}
+          {quickSaving && <Loader2 className="h-4 w-4 animate-spin text-blue-600 shrink-0" />}
         </div>
       )}
 
@@ -192,14 +192,14 @@ export default function ActivitiesPage() {
           <div className="flex bg-white rounded-xl border border-gray-200 p-1">
             <button
               onClick={() => setView('list')}
-              className={cn('p-1.5 rounded-lg transition-colors', view === 'list' ? 'bg-violet-100 text-violet-700' : 'text-gray-400 hover:text-gray-600')}
+              className={cn('p-1.5 rounded-lg transition-colors', view === 'list' ? 'bg-blue-100 text-blue-800' : 'text-gray-400 hover:text-gray-600')}
               title="Lista"
             >
               <LayoutList className="h-4 w-4" />
             </button>
             <button
               onClick={() => setView('kanban')}
-              className={cn('p-1.5 rounded-lg transition-colors', view === 'kanban' ? 'bg-violet-100 text-violet-700' : 'text-gray-400 hover:text-gray-600')}
+              className={cn('p-1.5 rounded-lg transition-colors', view === 'kanban' ? 'bg-blue-100 text-blue-800' : 'text-gray-400 hover:text-gray-600')}
               title="Kanban"
             >
               <KanbanSquare className="h-4 w-4" />
@@ -214,7 +214,7 @@ export default function ActivitiesPage() {
         <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
           <p className="text-gray-500">Nenhuma atividade encontrada</p>
           {hasActiveFilters && (
-            <button onClick={() => setFilters({})} className="text-xs text-violet-600 underline mt-2">Limpar filtros</button>
+            <button onClick={() => setFilters({})} className="text-xs text-blue-700 underline mt-2">Limpar filtros</button>
           )}
           {canEdit && (
             <Button asChild size="sm" className="mt-4">

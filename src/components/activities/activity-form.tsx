@@ -178,7 +178,7 @@ export function ActivityForm({ activity, entityId, userId }: ActivityFormProps) 
       {/* Basic Info */}
       <div className={SECTION}>
         <div className={SECTION_TITLE}>
-          <FileText className="h-4 w-4 text-violet-500" />
+          <FileText className="h-4 w-4 text-blue-600" />
           Informações Básicas
         </div>
         <div>
@@ -199,7 +199,7 @@ export function ActivityForm({ activity, entityId, userId }: ActivityFormProps) 
       {/* Classification */}
       <div className={SECTION}>
         <div className={SECTION_TITLE}>
-          <Calendar className="h-4 w-4 text-violet-500" />
+          <Calendar className="h-4 w-4 text-blue-600" />
           Classificação & Datas
         </div>
 
@@ -258,7 +258,7 @@ export function ActivityForm({ activity, entityId, userId }: ActivityFormProps) 
       {/* Responsibility */}
       <div className={SECTION}>
         <div className={SECTION_TITLE}>
-          <Users className="h-4 w-4 text-violet-500" />
+          <Users className="h-4 w-4 text-blue-600" />
           Responsabilidade
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -289,7 +289,7 @@ export function ActivityForm({ activity, entityId, userId }: ActivityFormProps) 
       {tags.length > 0 && (
         <div className={SECTION}>
           <div className={SECTION_TITLE}>
-            <TagIcon className="h-4 w-4 text-violet-500" />
+            <TagIcon className="h-4 w-4 text-blue-600" />
             Etiquetas
           </div>
           <div className="flex flex-wrap gap-2">
@@ -314,7 +314,7 @@ export function ActivityForm({ activity, entityId, userId }: ActivityFormProps) 
       {/* Notes */}
       <div className={SECTION}>
         <div className={SECTION_TITLE}>
-          <StickyNote className="h-4 w-4 text-violet-500" />
+          <StickyNote className="h-4 w-4 text-blue-600" />
           Notas & Observações
         </div>
         <RichEditor
@@ -329,7 +329,7 @@ export function ActivityForm({ activity, entityId, userId }: ActivityFormProps) 
         <Button type="button" variant="outline" onClick={() => router.back()} className="rounded-xl px-6">
           Cancelar
         </Button>
-        <Button type="submit" disabled={saving} className="rounded-xl px-8 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-md shadow-violet-200">
+        <Button type="submit" disabled={saving} className="rounded-xl px-8 bg-gradient-to-r from-blue-700 to-blue-700 hover:from-blue-800 hover:to-blue-800 shadow-md shadow-blue-200">
           {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           {activity ? 'Salvar Alterações' : '✨ Criar Atividade'}
         </Button>

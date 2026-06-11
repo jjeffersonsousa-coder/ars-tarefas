@@ -98,23 +98,23 @@ export default function SettingsPage() {
       {/* Avatar + Profile */}
       <div className="bg-white rounded-2xl border p-6 shadow-sm space-y-5">
         <div className="flex items-center gap-2">
-          <User className="h-5 w-5 text-violet-600" />
+          <User className="h-5 w-5 text-blue-700" />
           <h2 className="font-semibold text-gray-900">Perfil</h2>
         </div>
 
         {/* Avatar upload */}
         <div className="flex items-center gap-5">
           <div className="relative">
-            <Avatar className="h-20 w-20 ring-4 ring-violet-100">
+            <Avatar className="h-20 w-20 ring-4 ring-blue-100">
               {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name} />}
-              <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white text-xl font-bold">
+              <AvatarFallback className="bg-gradient-to-br from-blue-600 to-blue-800 text-white text-xl font-bold">
                 {profile ? getInitials(profile.full_name) : ''}
               </AvatarFallback>
             </Avatar>
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingAvatar}
-              className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-violet-600 text-white flex items-center justify-center shadow-md hover:bg-violet-700 transition-colors"
+              className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-blue-700 text-white flex items-center justify-center shadow-md hover:bg-blue-800 transition-colors"
             >
               {uploadingAvatar ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
             </button>
@@ -123,7 +123,7 @@ export default function SettingsPage() {
           <div>
             <p className="font-semibold text-gray-900">{profile?.full_name}</p>
             <p className="text-sm text-gray-500">{profile?.email}</p>
-            <button onClick={() => fileInputRef.current?.click()} className="text-xs text-violet-600 hover:underline mt-1">
+            <button onClick={() => fileInputRef.current?.click()} className="text-xs text-blue-700 hover:underline mt-1">
               Alterar foto de perfil
             </button>
             <p className="text-xs text-gray-400">JPG, PNG ou WebP · máx. 2MB</p>
@@ -139,7 +139,7 @@ export default function SettingsPage() {
           <Input value={profile?.email || ''} disabled className="mt-1 bg-gray-50" />
           <p className="text-xs text-gray-400 mt-1">O e-mail não pode ser alterado</p>
         </div>
-        <Button onClick={handleUpdateProfile} disabled={savingProfile || !fullName.trim()} className="bg-violet-600 hover:bg-violet-700">
+        <Button onClick={handleUpdateProfile} disabled={savingProfile || !fullName.trim()} className="bg-blue-700 hover:bg-blue-800">
           {savingProfile && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           Salvar Perfil
         </Button>
@@ -148,25 +148,25 @@ export default function SettingsPage() {
       {/* Menu Style */}
       <div className="bg-white rounded-2xl border p-6 shadow-sm space-y-4">
         <div className="flex items-center gap-2">
-          <LayoutDashboard className="h-5 w-5 text-violet-600" />
+          <LayoutDashboard className="h-5 w-5 text-blue-700" />
           <h2 className="font-semibold text-gray-900">Estilo do Menu</h2>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => handleMenuStyleChange('sidebar')}
-            className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${menuStyle === 'sidebar' ? 'border-violet-600 bg-violet-50' : 'border-gray-200 hover:border-gray-300'}`}
+            className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${menuStyle === 'sidebar' ? 'border-blue-700 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
           >
-            <PanelLeft className={`h-8 w-8 ${menuStyle === 'sidebar' ? 'text-violet-600' : 'text-gray-400'}`} />
-            <span className={`text-sm font-medium ${menuStyle === 'sidebar' ? 'text-violet-700' : 'text-gray-600'}`}>Menu Lateral</span>
-            {menuStyle === 'sidebar' && <span className="text-xs text-violet-500">✓ Ativo</span>}
+            <PanelLeft className={`h-8 w-8 ${menuStyle === 'sidebar' ? 'text-blue-700' : 'text-gray-400'}`} />
+            <span className={`text-sm font-medium ${menuStyle === 'sidebar' ? 'text-blue-800' : 'text-gray-600'}`}>Menu Lateral</span>
+            {menuStyle === 'sidebar' && <span className="text-xs text-blue-600">✓ Ativo</span>}
           </button>
           <button
             onClick={() => handleMenuStyleChange('topbar')}
-            className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${menuStyle === 'topbar' ? 'border-violet-600 bg-violet-50' : 'border-gray-200 hover:border-gray-300'}`}
+            className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${menuStyle === 'topbar' ? 'border-blue-700 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
           >
-            <LayoutDashboard className={`h-8 w-8 ${menuStyle === 'topbar' ? 'text-violet-600' : 'text-gray-400'}`} />
-            <span className={`text-sm font-medium ${menuStyle === 'topbar' ? 'text-violet-700' : 'text-gray-600'}`}>Menu Superior</span>
-            {menuStyle === 'topbar' && <span className="text-xs text-violet-500">✓ Ativo</span>}
+            <LayoutDashboard className={`h-8 w-8 ${menuStyle === 'topbar' ? 'text-blue-700' : 'text-gray-400'}`} />
+            <span className={`text-sm font-medium ${menuStyle === 'topbar' ? 'text-blue-800' : 'text-gray-600'}`}>Menu Superior</span>
+            {menuStyle === 'topbar' && <span className="text-xs text-blue-600">✓ Ativo</span>}
           </button>
         </div>
       </div>
@@ -174,7 +174,7 @@ export default function SettingsPage() {
       {/* Password */}
       <div className="bg-white rounded-2xl border p-6 shadow-sm space-y-4">
         <div className="flex items-center gap-2">
-          <Lock className="h-5 w-5 text-violet-600" />
+          <Lock className="h-5 w-5 text-blue-700" />
           <h2 className="font-semibold text-gray-900">Alterar Senha</h2>
         </div>
         <div>
@@ -185,7 +185,7 @@ export default function SettingsPage() {
           <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
           <Input id="confirmPassword" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Repita a nova senha" className="mt-1" />
         </div>
-        <Button onClick={handleUpdatePassword} disabled={savingPassword || !newPassword || !confirmPassword} className="bg-violet-600 hover:bg-violet-700">
+        <Button onClick={handleUpdatePassword} disabled={savingPassword || !newPassword || !confirmPassword} className="bg-blue-700 hover:bg-blue-800">
           {savingPassword && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           Alterar Senha
         </Button>

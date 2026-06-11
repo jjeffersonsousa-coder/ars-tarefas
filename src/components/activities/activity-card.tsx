@@ -83,12 +83,12 @@ export function ActivityCard({ activity, onUpdate, canEdit = false, compact = fa
             className="group/link flex items-center gap-1"
           >
             <h3 className={cn(
-              'font-semibold text-gray-900 truncate group-hover/link:text-violet-700 transition-colors',
+              'font-semibold text-gray-900 truncate group-hover/link:text-blue-800 transition-colors',
               isFinished && 'line-through text-gray-400'
             )}>
               {activity.title}
             </h3>
-            <ChevronRight className="h-3.5 w-3.5 text-gray-300 group-hover/link:text-violet-500 shrink-0 transition-colors" />
+            <ChevronRight className="h-3.5 w-3.5 text-gray-300 group-hover/link:text-blue-600 shrink-0 transition-colors" />
           </Link>
 
           {activity.context && (
@@ -145,7 +145,7 @@ export function ActivityCard({ activity, onUpdate, canEdit = false, compact = fa
             <div className="flex items-center gap-1.5">
               <Avatar className="h-5 w-5 ring-1 ring-gray-200">
                 {activity.responsible.avatar_url && <AvatarImage src={activity.responsible.avatar_url} />}
-                <AvatarFallback className="bg-violet-100 text-violet-700 text-[9px] font-bold">
+                <AvatarFallback className="bg-blue-100 text-blue-800 text-[9px] font-bold">
                   {getInitials(activity.responsible.full_name)}
                 </AvatarFallback>
               </Avatar>

@@ -97,13 +97,13 @@ export default function CalendarPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <CalendarDays className="h-6 w-6 text-violet-600" />
+            <CalendarDays className="h-6 w-6 text-blue-700" />
             Calendário
           </h1>
           <p className="text-gray-500 text-sm mt-0.5">Atividades organizadas por data de vencimento</p>
         </div>
         {canEdit && (
-          <Button asChild className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-md shadow-violet-200 rounded-xl">
+          <Button asChild className="bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-800 hover:to-blue-800 shadow-md shadow-blue-200 rounded-xl">
             <Link href="/activities/new"><Plus className="h-4 w-4 mr-2" />Nova Atividade</Link>
           </Button>
         )}
@@ -113,7 +113,7 @@ export default function CalendarPage() {
         {/* Calendar grid */}
         <div className="xl:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-violet-50 to-purple-50">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-blue-50">
             <button onClick={prevMonth} className="p-2 rounded-xl hover:bg-white/80 transition-colors">
               <ChevronLeft className="h-5 w-5 text-gray-600" />
             </button>
@@ -152,15 +152,15 @@ export default function CalendarPage() {
                   className={cn(
                     'min-h-[90px] p-2 border-b border-r border-gray-50 last:border-r-0',
                     idx % 7 === 6 && 'border-r-0',
-                    day ? 'cursor-pointer hover:bg-violet-50/50 transition-colors' : 'bg-gray-50/30',
-                    isSelected && 'bg-violet-50 ring-2 ring-inset ring-violet-300',
+                    day ? 'cursor-pointer hover:bg-blue-50/50 transition-colors' : 'bg-gray-50/30',
+                    isSelected && 'bg-blue-50 ring-2 ring-inset ring-blue-300',
                   )}
                 >
                   {day && (
                     <>
                       <div className={cn(
                         'text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full mb-1.5',
-                        isTod ? 'bg-violet-600 text-white' : 'text-gray-700',
+                        isTod ? 'bg-blue-700 text-white' : 'text-gray-700',
                         hasOverdue && !isTod && 'text-red-600',
                       )}>
                         {day}
@@ -174,7 +174,7 @@ export default function CalendarPage() {
                               'text-[10px] leading-tight px-1.5 py-0.5 rounded font-medium truncate cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1',
                               a.status === 'concluida' ? 'bg-emerald-100 text-emerald-700' :
                               a.status === 'cancelada' ? 'bg-gray-100 text-gray-500 line-through' :
-                              hasOverdue ? 'bg-red-100 text-red-700' : 'bg-violet-100 text-violet-700'
+                              hasOverdue ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-800'
                             )}
                           >
                             <span className={cn('inline-block w-1.5 h-1.5 rounded-full flex-shrink-0', PRIORITY_DOT[a.priority])} />
@@ -210,7 +210,7 @@ export default function CalendarPage() {
         <div className="xl:col-span-1 space-y-4">
           {selectedDay ? (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-violet-50 to-purple-50">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-blue-50">
                 <div>
                   <h3 className="font-bold text-gray-900 text-sm">
                     {selectedDay} de {MONTHS[month]}
@@ -263,7 +263,7 @@ export default function CalendarPage() {
             ) : (
               <>
                 {[
-                  { label: 'Com atividades', value: Object.keys(activitiesByDay).length, color: 'text-violet-600' },
+                  { label: 'Com atividades', value: Object.keys(activitiesByDay).length, color: 'text-blue-700' },
                   { label: 'Total de atividades', value: Object.values(activitiesByDay).reduce((s, a) => s + a.length, 0), color: 'text-gray-800' },
                   { label: 'Concluídas', value: Object.values(activitiesByDay).flat().filter(a => a.status === 'concluida').length, color: 'text-emerald-600' },
                   { label: 'Pendentes/Em andamento', value: Object.values(activitiesByDay).flat().filter(a => a.status === 'pendente' || a.status === 'em_andamento').length, color: 'text-amber-600' },

@@ -8,7 +8,7 @@ const helpTopics = [
   {
     icon: LayoutDashboard,
     title: 'Dashboard',
-    color: 'text-violet-600 bg-violet-50',
+    color: 'text-blue-700 bg-blue-50',
     steps: [
       'Acesse o Dashboard pelo menu lateral (ícone de casa)',
       'Veja os 4 cards no topo: Total, Pendentes, Concluídas e Vencidas',
@@ -204,13 +204,13 @@ function HelpModal({ onClose }: { onClose: () => void }) {
                     width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
                     padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
                     textAlign: 'left', fontSize: '13px', transition: 'all 0.15s',
-                    background: selected === i ? '#F5F3FF' : 'transparent',
-                    color: selected === i ? '#6D28D9' : '#4B5563',
+                    background: selected === i ? '#EFF6FF' : 'transparent',
+                    color: selected === i ? '#1D4ED8' : '#4B5563',
                     fontWeight: selected === i ? 600 : 400,
                     marginBottom: '2px',
                   }}
                 >
-                  <div style={{ width: '26px', height: '26px', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: selected === i ? '#EDE9FE' : '#F9FAFB' }}>
+                  <div style={{ width: '26px', height: '26px', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: selected === i ? '#DBEAFE' : '#F9FAFB' }}>
                     <TIcon style={{ width: '14px', height: '14px' }} />
                   </div>
                   <span style={{ flex: 1 }}>{t.title}</span>
@@ -235,7 +235,7 @@ function HelpModal({ onClose }: { onClose: () => void }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {topic.steps.map((step, i) => (
                 <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', padding: '12px 14px', background: '#F9FAFB', borderRadius: '12px', border: '1px solid #F3F4F6' }}>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#6D28D9', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0, marginTop: '1px' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#1D4ED8', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0, marginTop: '1px' }}>
                     {i + 1}
                   </div>
                   <p style={{ fontSize: '14px', color: '#374151', margin: 0, lineHeight: 1.6 }}>{step}</p>
@@ -243,9 +243,9 @@ function HelpModal({ onClose }: { onClose: () => void }) {
               ))}
             </div>
 
-            <div style={{ marginTop: '16px', padding: '12px 14px', background: '#F5F3FF', borderRadius: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <CheckCircle2 style={{ width: '16px', height: '16px', color: '#7C3AED', flexShrink: 0 }} />
-              <p style={{ fontSize: '13px', color: '#6D28D9', margin: 0 }}>Selecione outro tópico ao lado para ver mais tutoriais</p>
+            <div style={{ marginTop: '16px', padding: '12px 14px', background: '#EFF6FF', borderRadius: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <CheckCircle2 style={{ width: '16px', height: '16px', color: '#2563EB', flexShrink: 0 }} />
+              <p style={{ fontSize: '13px', color: '#1D4ED8', margin: 0 }}>Selecione outro tópico ao lado para ver mais tutoriais</p>
             </div>
           </div>
         </div>

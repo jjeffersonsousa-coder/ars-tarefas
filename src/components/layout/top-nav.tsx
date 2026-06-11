@@ -49,7 +49,7 @@ export function TopNav({ user, menuStyle, onMenuStyleChange }: TopNavProps) {
     <header className="h-14 bg-[#0F1117] border-b border-white/10 flex items-center px-4 gap-2 shrink-0 z-30">
       {/* Logo */}
       <div className="flex items-center gap-2 mr-4">
-        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-400 to-purple-600 flex items-center justify-center shadow-lg">
+        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg">
           <Zap className="h-4 w-4 text-white" />
         </div>
         <span className="text-white font-bold text-sm hidden sm:block">ARS</span>
@@ -64,7 +64,7 @@ export function TopNav({ user, menuStyle, onMenuStyleChange }: TopNavProps) {
             <Link key={item.href} href={item.href}
               className={cn(
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
-                isActive ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                isActive ? 'bg-blue-700 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'
               )}
             >
               <Icon className="h-3.5 w-3.5" />
@@ -84,9 +84,9 @@ export function TopNav({ user, menuStyle, onMenuStyleChange }: TopNavProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 px-2 py-1 rounded-xl hover:bg-white/5 transition-colors">
-              <Avatar className="h-7 w-7 ring-2 ring-violet-500/40">
+              <Avatar className="h-7 w-7 ring-2 ring-blue-600/40">
                 {user.avatar_url && <AvatarImage src={user.avatar_url} alt={user.full_name} />}
-                <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white text-xs font-semibold">
+                <AvatarFallback className="bg-gradient-to-br from-blue-600 to-blue-700 text-white text-xs font-semibold">
                   {getInitials(user.full_name)}
                 </AvatarFallback>
               </Avatar>

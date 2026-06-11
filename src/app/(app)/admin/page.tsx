@@ -104,7 +104,7 @@ export default function AdminPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
-      <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
+      <Loader2 className="h-8 w-8 animate-spin text-blue-700" />
     </div>
   )
 
@@ -115,7 +115,7 @@ export default function AdminPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8">
       <div className="flex items-center gap-3">
-        <ShieldAlert className="h-7 w-7 text-violet-600" />
+        <ShieldAlert className="h-7 w-7 text-blue-700" />
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Painel do Super Admin</h1>
           <p className="text-sm text-gray-500">Gerencie empresas, grupos familiares e usuários</p>
@@ -125,7 +125,7 @@ export default function AdminPage() {
       {/* Criar nova entidade */}
       <div className="bg-white rounded-2xl border p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Plus className="h-5 w-5 text-violet-600" /> Criar Empresa ou Grupo Familiar
+          <Plus className="h-5 w-5 text-blue-700" /> Criar Empresa ou Grupo Familiar
         </h2>
         <form onSubmit={handleCreateEntity} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -171,7 +171,7 @@ export default function AdminPage() {
       {/* Lista de entidades */}
       <div className="bg-white rounded-2xl border p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Building2 className="h-5 w-5 text-violet-600" /> Empresas e Grupos ({entities.length})
+          <Building2 className="h-5 w-5 text-blue-700" /> Empresas e Grupos ({entities.length})
         </h2>
         {entities.length === 0 ? (
           <p className="text-sm text-gray-500">Nenhuma empresa/grupo criado ainda.</p>
@@ -195,7 +195,7 @@ export default function AdminPage() {
                       {members.map(m => (
                         <div key={m.id} className="flex items-center justify-between text-sm">
                           <span className="text-gray-700">{m.full_name} <span className="text-gray-400">({m.email})</span></span>
-                          <Badge className={m.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-gray-100 text-gray-700'}>
+                          <Badge className={m.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}>
                             {m.role === 'admin' ? 'Master' : m.role}
                           </Badge>
                         </div>
@@ -212,7 +212,7 @@ export default function AdminPage() {
       {/* Todos os usuários */}
       <div className="bg-white rounded-2xl border p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Users className="h-5 w-5 text-violet-600" /> Todos os Usuários ({users.length})
+          <Users className="h-5 w-5 text-blue-700" /> Todos os Usuários ({users.length})
         </h2>
         <div className="space-y-2">
           {users.map(u => (

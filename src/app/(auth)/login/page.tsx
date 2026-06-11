@@ -73,10 +73,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 mb-4 shadow-lg shadow-violet-900/50">
+          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 mb-4 shadow-lg shadow-blue-900/50">
             <Zap className="h-7 w-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white">ARS</h1>
@@ -126,7 +126,7 @@ export default function LoginPage() {
                 placeholder="••••••••" required className="mt-1.5 h-11 rounded-xl" />
             </div>
             <Button type="submit" disabled={loading}
-              className="w-full h-11 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 font-semibold shadow-md shadow-violet-200">
+              className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-700 to-blue-700 hover:from-blue-800 hover:to-blue-800 font-semibold shadow-md shadow-blue-200">
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Entrar
             </Button>
@@ -134,7 +134,7 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-gray-500 mt-4">
             Não tem conta?{' '}
-            <Link href="/register" className="text-violet-600 hover:text-violet-800 font-semibold">
+            <Link href="/register" className="text-blue-700 hover:text-blue-900 font-semibold">
               Criar conta
             </Link>
           </p>

@@ -50,7 +50,7 @@ export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
       {!isMobile && (
         <button
           onClick={handleToggle}
-          className="absolute -right-3 top-6 z-10 h-6 w-6 rounded-full bg-violet-600 text-white flex items-center justify-center shadow-md hover:bg-violet-700 transition-colors"
+          className="absolute -right-3 top-6 z-10 h-6 w-6 rounded-full bg-blue-700 text-white flex items-center justify-center shadow-md hover:bg-blue-800 transition-colors"
         >
           {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
         </button>
@@ -59,7 +59,7 @@ export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
       {/* Logo */}
       <div className={cn('flex h-16 items-center border-b border-white/10 transition-all', collapsed ? 'px-3 justify-center' : 'px-5')}>
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 shrink-0 rounded-xl bg-gradient-to-br from-violet-400 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-900/30">
+          <div className="h-9 w-9 shrink-0 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-900/30">
             <Zap className="h-5 w-5 text-white" />
           </div>
           {!collapsed && (
@@ -87,7 +87,7 @@ export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
                 'flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-150',
                 collapsed ? 'px-2 py-2.5 justify-center' : 'px-3 py-2.5',
                 isActive
-                  ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-md shadow-violet-900/30'
+                  ? 'bg-gradient-to-r from-blue-700 to-blue-700 text-white shadow-md shadow-blue-900/30'
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
               )}
             >

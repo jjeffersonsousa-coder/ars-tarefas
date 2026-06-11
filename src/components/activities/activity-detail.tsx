@@ -122,7 +122,7 @@ export function ActivityDetail({
             {activity.delegated_to ? (
               <div className="flex items-center gap-1">
                 <Avatar className="h-5 w-5">
-                  <AvatarFallback className="bg-purple-100 text-purple-700 text-xs">
+                  <AvatarFallback className="bg-blue-100 text-blue-800 text-xs">
                     {getInitials(activity.delegated_to.full_name)}
                   </AvatarFallback>
                 </Avatar>

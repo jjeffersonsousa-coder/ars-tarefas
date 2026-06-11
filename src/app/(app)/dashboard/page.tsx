@@ -123,7 +123,7 @@ export default function DashboardPage() {
             Atualizar
           </Button>
           {canEdit && (
-            <Button asChild className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-md shadow-violet-200 rounded-xl">
+            <Button asChild className="bg-gradient-to-r from-blue-700 to-blue-700 hover:from-blue-800 hover:to-blue-800 shadow-md shadow-blue-200 rounded-xl">
               <Link href="/activities/new"><Plus className="h-4 w-4 mr-2" />Nova Atividade</Link>
             </Button>
           )}
@@ -185,7 +185,7 @@ export default function DashboardPage() {
           {activeStatFilter && (
             <div className="flex items-center gap-2 text-sm">
               <span className="text-gray-500">Filtrando:</span>
-              <span className="bg-violet-100 text-violet-700 px-3 py-1 rounded-full font-medium text-xs">
+              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium text-xs">
                 {activeStatFilter === 'total' ? 'Todas' : activeStatFilter === 'overdue' ? 'Vencidas' : activeStatFilter === 'dueToday' ? 'Vencem Hoje' : activeStatFilter === 'inProgress' ? 'Em Andamento' : activeStatFilter === 'completed' ? 'Concluídas' : 'Pendentes'}
               </span>
               <button onClick={() => setActiveStatFilter(null)} className="text-gray-400 hover:text-gray-600 text-xs underline">limpar</button>
