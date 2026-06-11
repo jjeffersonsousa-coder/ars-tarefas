@@ -34,26 +34,11 @@ function RegisterForm() {
       return
     }
 
-    // 2. Cria entidade pessoal automaticamente
-    const { data: entity, error: entityError } = await supabase
-      .from('entities')
-      .insert({ name: fullName, type: 'pessoa_fisica' })
-      .select()
-      .single()
-
-    if (entityError) {
-      setError('Erro ao criar perfil: ' + entityError.message)
-      setLoading(false)
-      return
-    }
-
-    // 3. Cria perfil do usuário
-    const { error: profileError } = await supabase.from('user_profiles').insert({
-      id: data.user.id,
-      entity_id: entity.id,
-      full_name: fullName,
-      email: email,
-      role: 'admin',
+    // 2. Cria entidade pessoal e perfil via função SECURITY DEFINER
+    const { error: profileError } = await supabase.rpc('create_user_profile', {
+      user_id: data.user.id,
+      user_name: fullName,
+      user_email: email,
     })
 
     if (profileError) {
