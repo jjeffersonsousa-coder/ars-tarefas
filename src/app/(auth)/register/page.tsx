@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -12,7 +12,7 @@ import { CheckSquare, Loader2 } from 'lucide-react'
 
 type Step = 'account' | 'entity'
 
-export default function RegisterPage() {
+function RegisterForm() {
   const searchParams = useSearchParams()
   const initialStep: Step = searchParams.get('step') === 'entity' ? 'entity' : 'account'
 
@@ -276,5 +276,17 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="h-8 w-8 rounded-full border-4 border-violet-600 border-t-transparent animate-spin" />
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   )
 }
