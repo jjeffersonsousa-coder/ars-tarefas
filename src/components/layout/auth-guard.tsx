@@ -28,7 +28,16 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         .single()
 
       if (!p) {
-        router.replace('/register?step=entity')
+        // Cria perfil automaticamente se não existe
+        await supabase.rpc('create_user_profile', {
+          user_id: user.id,
+          user_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
+          user_email: user.email || '',
+        })
+        const { data: newProfile } = await supabase.from('user_profiles').select('*').eq('id', user.id).single()
+        if (!newProfile) { router.replace('/login'); return }
+        setProfile(newProfile as UserProfile)
+        setLoading(false)
         return
       }
       setProfile(p as UserProfile)

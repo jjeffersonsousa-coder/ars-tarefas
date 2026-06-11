@@ -26,17 +26,47 @@ function RegisterForm() {
     setLoading(true)
     setError(null)
 
-    // 1. Cria usuário no auth
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
-    if (signUpError || !data.user) {
-      setError(signUpError?.message || 'Erro ao criar conta')
+    // Tenta criar conta; se já existe, faz login
+    let userId: string | null = null
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password })
+
+    if (signUpError) {
+      if (signUpError.message.toLowerCase().includes('already registered') || signUpError.message.toLowerCase().includes('already been registered')) {
+        // Usuário existe — faz login para obter sessão
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+        if (signInError || !signInData.user) {
+          setError('E-mail já cadastrado. Tente fazer login.')
+          setLoading(false)
+          return
+        }
+        userId = signInData.user.id
+      } else {
+        setError(signUpError.message)
+        setLoading(false)
+        return
+      }
+    } else {
+      userId = signUpData.user?.id ?? null
+    }
+
+    if (!userId) {
+      setError('Erro ao obter usuário.')
       setLoading(false)
       return
     }
 
-    // 2. Cria entidade pessoal e perfil via função SECURITY DEFINER
+    // Verifica se perfil já existe
+    const { data: existingProfile } = await supabase
+      .from('user_profiles').select('id').eq('id', userId).single()
+
+    if (existingProfile) {
+      router.push('/dashboard')
+      return
+    }
+
+    // Cria entidade pessoal e perfil via função SECURITY DEFINER
     const { error: profileError } = await supabase.rpc('create_user_profile', {
-      user_id: data.user.id,
+      user_id: userId,
       user_name: fullName,
       user_email: email,
     })
@@ -72,39 +102,15 @@ function RegisterForm() {
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
               <Label htmlFor="fullName">Nome completo</Label>
-              <Input
-                id="fullName"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Seu nome"
-                required
-                className="mt-1"
-              />
+              <Input id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Seu nome" required className="mt-1" />
             </div>
             <div>
               <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-                required
-                className="mt-1"
-              />
+              <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" required className="mt-1" />
             </div>
             <div>
               <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-                minLength={6}
-                required
-                className="mt-1"
-              />
+              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" minLength={6} required className="mt-1" />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -114,9 +120,7 @@ function RegisterForm() {
 
           <p className="text-center text-sm text-gray-500 mt-4">
             Já tem conta?{' '}
-            <Link href="/login" className="text-indigo-600 hover:text-indigo-800 font-medium">
-              Entrar
-            </Link>
+            <Link href="/login" className="text-indigo-600 hover:text-indigo-800 font-medium">Entrar</Link>
           </p>
         </div>
       </div>
