@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/client'
-import { Activity, Tag, UserProfile, Department } from '@/lib/types'
+import { Activity, Tag, UserProfile, Department, RecurrenceType, WeekendHandling } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
-import { Loader2, FileText, Tag as TagIcon, Users, Calendar, StickyNote, Layers } from 'lucide-react'
+import { Loader2, FileText, Tag as TagIcon, Users, Calendar, StickyNote, Layers, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { RichEditor } from '@/components/ui/rich-editor'
 
@@ -66,6 +66,13 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Recurrence state
+  const [isRecurring, setIsRecurring] = useState(activity?.is_recurring ?? false)
+  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>(activity?.recurrence_type ?? 'weekly')
+  const [recurrenceInterval, setRecurrenceInterval] = useState(activity?.recurrence_interval ?? 1)
+  const [recurrenceDays, setRecurrenceDays] = useState<number[]>(activity?.recurrence_days ?? [])
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState(activity?.recurrence_end_date?.split('T')[0] ?? '')
+  const [weekendHandling, setWeekendHandling] = useState<WeekendHandling>(activity?.weekend_handling ?? 'none')
   const supabase = createClient()
   const router = useRouter()
 
@@ -132,7 +139,8 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
           const newVal = String((data as Record<string, unknown>)[field] || '')
           if (oldVal !== newVal) changes.push({ field, old_value: oldVal || null, new_value: newVal || null })
         }
-        const updatePayload = { title: payload.title, description: payload.description, context: payload.context, responsible_id: payload.responsible_id, delegated_to_id: payload.delegated_to_id, priority: payload.priority, status: payload.status, rich_notes: payload.rich_notes, due_date: payload.due_date, follow_up_date: payload.follow_up_date, updated_at: payload.updated_at, department_id: selectedDeptId || null }
+        const recurrencePayload = isRecurring ? { is_recurring: true, recurrence_type: recurrenceType, recurrence_interval: recurrenceInterval, recurrence_days: recurrenceDays, recurrence_end_date: recurrenceEndDate || null, weekend_handling: weekendHandling } : { is_recurring: false, recurrence_type: null, recurrence_interval: null, recurrence_days: null, recurrence_end_date: null, weekend_handling: null }
+        const updatePayload = { title: payload.title, description: payload.description, context: payload.context, responsible_id: payload.responsible_id, delegated_to_id: payload.delegated_to_id, priority: payload.priority, status: payload.status, rich_notes: payload.rich_notes, due_date: payload.due_date, follow_up_date: payload.follow_up_date, updated_at: payload.updated_at, department_id: selectedDeptId || null, ...recurrencePayload }
         const { error: updateError } = await (db as any).from('activities').update(updatePayload).eq('id', activity.id)
         if (updateError) throw updateError
         for (const change of changes) {
@@ -140,6 +148,8 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
         }
       } else {
         const insertPayload = { entity_id: payload.entity_id, department_id: selectedDeptId || userDepartmentId || null, title: payload.title, description: payload.description, context: payload.context, responsible_id: payload.responsible_id, delegated_to_id: payload.delegated_to_id, priority: payload.priority, status: payload.status, rich_notes: payload.rich_notes, due_date: payload.due_date, follow_up_date: payload.follow_up_date, created_by: userId, updated_at: payload.updated_at }
+        const recurrencePayload2 = isRecurring ? { is_recurring: true, recurrence_type: recurrenceType, recurrence_interval: recurrenceInterval, recurrence_days: recurrenceDays, recurrence_end_date: recurrenceEndDate || null, weekend_handling: weekendHandling } : { is_recurring: false }
+        Object.assign(insertPayload, recurrencePayload2)
         const { data: created, error: insertError } = await (db as any).from('activities').insert(insertPayload).select().single()
         if (insertError) throw insertError
         activityId = created.id
@@ -350,6 +360,114 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
           placeholder="Adicione notas, instruções ou qualquer informação relevante..."
           minHeight="140px"
         />
+      </div>
+
+      {/* Recurrence */}
+      <div className={SECTION}>
+        <div className={SECTION_TITLE}>
+          <RefreshCw className="h-4 w-4 text-blue-600" />
+          Recorrência
+        </div>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <div
+            onClick={() => setIsRecurring(!isRecurring)}
+            style={{
+              width: '44px', height: '24px', borderRadius: '12px', position: 'relative', cursor: 'pointer', flexShrink: 0,
+              background: isRecurring ? '#006494' : '#D1D5DB', transition: 'background 0.2s',
+            }}
+          >
+            <div style={{
+              width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute',
+              top: '2px', left: isRecurring ? '22px' : '2px', transition: 'left 0.2s',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+            }} />
+          </div>
+          <span className="text-sm font-medium text-gray-700">Atividade recorrente</span>
+        </label>
+
+        {isRecurring && (
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Frequência</Label>
+                <Select value={recurrenceType} onValueChange={(v) => setRecurrenceType(v as RecurrenceType)}>
+                  <SelectTrigger className="mt-1.5 h-10 rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Diária</SelectItem>
+                    <SelectItem value="weekly">Semanal</SelectItem>
+                    <SelectItem value="monthly">Mensal</SelectItem>
+                    <SelectItem value="yearly">Anual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  A cada (
+                  {recurrenceType === 'daily' ? 'dias' : recurrenceType === 'weekly' ? 'semanas' : recurrenceType === 'monthly' ? 'meses' : 'anos'}
+                  )
+                </Label>
+                <Input
+                  type="number" min={1} max={99}
+                  value={recurrenceInterval}
+                  onChange={(e) => setRecurrenceInterval(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="mt-1.5 h-10 rounded-xl"
+                />
+              </div>
+            </div>
+
+            {recurrenceType === 'weekly' && (
+              <div>
+                <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Dias da semana</Label>
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, i) => (
+                    <button
+                      type="button" key={i}
+                      onClick={() => setRecurrenceDays((prev) => prev.includes(i) ? prev.filter((d) => d !== i) : [...prev, i])}
+                      style={{
+                        width: '40px', height: '40px', borderRadius: '10px', fontSize: '12px', fontWeight: 600,
+                        cursor: 'pointer', border: '2px solid',
+                        borderColor: recurrenceDays.includes(i) ? '#006494' : '#E5E7EB',
+                        background: recurrenceDays.includes(i) ? '#006494' : 'white',
+                        color: recurrenceDays.includes(i) ? 'white' : '#6B7280',
+                      }}
+                    >{day}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Data de término (opcional)</Label>
+              <Input type="date" value={recurrenceEndDate} onChange={(e) => setRecurrenceEndDate(e.target.value)} className="mt-1.5 h-10 rounded-xl" />
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Se cair no final de semana</Label>
+              <div className="flex gap-2 mt-2">
+                {[
+                  { value: 'none', label: '📅 Manter data', desc: 'Não alterar' },
+                  { value: 'before', label: '⬅️ Antecipar', desc: 'Mover para sexta' },
+                  { value: 'after', label: '➡️ Postergar', desc: 'Mover para segunda' },
+                ].map((opt) => (
+                  <button
+                    type="button" key={opt.value}
+                    onClick={() => setWeekendHandling(opt.value as WeekendHandling)}
+                    style={{
+                      flex: 1, padding: '10px 8px', borderRadius: '10px', cursor: 'pointer',
+                      border: '2px solid', fontSize: '11px', fontWeight: 600, textAlign: 'center',
+                      borderColor: weekendHandling === opt.value ? '#006494' : '#E5E7EB',
+                      background: weekendHandling === opt.value ? '#EFF6FF' : 'white',
+                      color: weekendHandling === opt.value ? '#006494' : '#6B7280',
+                    }}
+                  >
+                    <div>{opt.label}</div>
+                    <div style={{ fontWeight: 400, color: '#9CA3AF', marginTop: '2px' }}>{opt.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center justify-end gap-3 pb-6">

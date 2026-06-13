@@ -1,4 +1,6 @@
 export type EntityType = 'empresa' | 'familia' | 'pessoa_fisica'
+export type RecurrenceType = 'daily' | 'weekly' | 'monthly' | 'yearly'
+export type WeekendHandling = 'none' | 'before' | 'after'
 export type UserRole = 'admin' | 'editor' | 'visualizador'
 export type Priority = 'urgente' | 'alta' | 'media' | 'baixa'
 export type ActivityStatus = 'pendente' | 'em_andamento' | 'aguardando' | 'concluida' | 'cancelada'
@@ -62,6 +64,13 @@ export interface Activity {
   created_by?: string | null
   created_at: string
   updated_at: string
+  // Recurrence
+  is_recurring?: boolean | null
+  recurrence_type?: RecurrenceType | null
+  recurrence_interval?: number | null
+  recurrence_days?: number[] | null
+  recurrence_end_date?: string | null
+  weekend_handling?: WeekendHandling | null
   // Joined fields
   responsible?: UserProfile | null
   delegated_to?: UserProfile | null

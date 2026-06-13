@@ -124,6 +124,13 @@ export default function UsersPage() {
     toast.success('Cargo atualizado!')
   }
 
+  async function updateDepartment(userId: string, deptId: string) {
+    const value = deptId === 'none' ? null : deptId
+    await (supabase as any).from('user_profiles').update({ department_id: value }).eq('id', userId)
+    setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, department_id: value } : u))
+    toast.success('Departamento atualizado!')
+  }
+
   const isAdmin = profile?.role === 'admin'
 
   const filtered = users.filter((u) => {
@@ -241,6 +248,15 @@ export default function UsersPage() {
                         <SelectItem value="visualizador">Visualizador</SelectItem>
                       </SelectContent>
                     </Select>
+                    {departments.length > 0 && (
+                      <Select value={user.department_id || 'none'} onValueChange={(v) => updateDepartment(user.id, v)}>
+                        <SelectTrigger className="h-8 w-44 text-xs rounded-lg"><SelectValue placeholder="Departamento" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Sem departamento</SelectItem>
+                          {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                 )}
               </div>
