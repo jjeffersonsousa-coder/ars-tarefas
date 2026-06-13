@@ -41,7 +41,7 @@ export default function NewActivityPage() {
         <h1 className="text-2xl font-bold text-gray-900">Nova Atividade</h1>
         <p className="text-gray-500 text-sm mt-0.5">Preencha os campos abaixo para criar uma nova atividade</p>
       </div>
-      <ActivityForm entityId={profile.entity_id || ''} userId={profile.id} />
+      <ActivityForm entityId={profile.entity_id || ''} userId={profile.id} userDepartmentId={profile.department_id} userRole={profile.role} />
     </div>
   )
 }

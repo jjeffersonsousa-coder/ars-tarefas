@@ -48,6 +48,7 @@ export interface Tag {
 export interface Activity {
   id: string
   entity_id?: string | null
+  department_id?: string | null
   title: string
   description?: string | null
   context?: string | null

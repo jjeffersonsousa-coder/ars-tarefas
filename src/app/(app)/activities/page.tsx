@@ -99,6 +99,7 @@ export default function ActivitiesPage() {
     const { error } = await supabase.from('activities').insert({
       title: quickTitle.trim(),
       entity_id: profile.entity_id,
+      department_id: profile.department_id || null,
       created_by: profile.id,
       status: 'pendente',
       priority: 'media',

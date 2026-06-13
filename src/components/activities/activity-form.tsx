@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/client'
-import { Activity, Tag, UserProfile } from '@/lib/types'
+import { Activity, Tag, UserProfile, Department } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
-import { Loader2, FileText, Tag as TagIcon, Users, Calendar, StickyNote } from 'lucide-react'
+import { Loader2, FileText, Tag as TagIcon, Users, Calendar, StickyNote, Layers } from 'lucide-react'
 import { toast } from 'sonner'
 import { RichEditor } from '@/components/ui/rich-editor'
 
@@ -38,6 +38,8 @@ interface ActivityFormProps {
   activity?: Activity
   entityId: string
   userId: string
+  userDepartmentId?: string | null
+  userRole?: string
 }
 
 function toLocalDatetime(iso?: string | null): { date: string; time: string } {
@@ -54,9 +56,11 @@ function buildISOString(date: string, time: string): string | null {
   return new Date(`${date}T${timeStr}`).toISOString()
 }
 
-export function ActivityForm({ activity, entityId, userId }: ActivityFormProps) {
+export function ActivityForm({ activity, entityId, userId, userDepartmentId, userRole }: ActivityFormProps) {
   const [users, setUsers] = useState<UserProfile[]>([])
   const [tags, setTags] = useState<Tag[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [selectedDeptId, setSelectedDeptId] = useState<string>(activity?.department_id || userDepartmentId || '')
   const [selectedTags, setSelectedTags] = useState<string[]>(
     activity?.tags?.map((t) => t.id) || []
   )
@@ -91,6 +95,8 @@ export function ActivityForm({ activity, entityId, userId }: ActivityFormProps) 
       .then(({ data }) => data && setUsers(data as UserProfile[]))
     supabase.from('tags').select('*').eq('entity_id', entityId)
       .then(({ data }) => data && setTags(data as Tag[]))
+    supabase.from('departments').select('*').eq('entity_id', entityId).order('name')
+      .then(({ data }) => data && setDepartments(data as Department[]))
   }, [entityId])
 
   function toggleTag(tagId: string) {
@@ -126,14 +132,14 @@ export function ActivityForm({ activity, entityId, userId }: ActivityFormProps) 
           const newVal = String((data as Record<string, unknown>)[field] || '')
           if (oldVal !== newVal) changes.push({ field, old_value: oldVal || null, new_value: newVal || null })
         }
-        const updatePayload = { title: payload.title, description: payload.description, context: payload.context, responsible_id: payload.responsible_id, delegated_to_id: payload.delegated_to_id, priority: payload.priority, status: payload.status, rich_notes: payload.rich_notes, due_date: payload.due_date, follow_up_date: payload.follow_up_date, updated_at: payload.updated_at }
+        const updatePayload = { title: payload.title, description: payload.description, context: payload.context, responsible_id: payload.responsible_id, delegated_to_id: payload.delegated_to_id, priority: payload.priority, status: payload.status, rich_notes: payload.rich_notes, due_date: payload.due_date, follow_up_date: payload.follow_up_date, updated_at: payload.updated_at, department_id: selectedDeptId || null }
         const { error: updateError } = await db.from('activities').update(updatePayload).eq('id', activity.id)
         if (updateError) throw updateError
         for (const change of changes) {
           await db.from('activity_history').insert({ activity_id: activity.id, user_id: userId, field_changed: change.field, old_value: change.old_value, new_value: change.new_value })
         }
       } else {
-        const insertPayload = { entity_id: payload.entity_id, title: payload.title, description: payload.description, context: payload.context, responsible_id: payload.responsible_id, delegated_to_id: payload.delegated_to_id, priority: payload.priority, status: payload.status, rich_notes: payload.rich_notes, due_date: payload.due_date, follow_up_date: payload.follow_up_date, created_by: userId, updated_at: payload.updated_at }
+        const insertPayload = { entity_id: payload.entity_id, department_id: selectedDeptId || userDepartmentId || null, title: payload.title, description: payload.description, context: payload.context, responsible_id: payload.responsible_id, delegated_to_id: payload.delegated_to_id, priority: payload.priority, status: payload.status, rich_notes: payload.rich_notes, due_date: payload.due_date, follow_up_date: payload.follow_up_date, created_by: userId, updated_at: payload.updated_at }
         const { data: created, error: insertError } = await db.from('activities').insert(insertPayload).select().single()
         if (insertError) throw insertError
         activityId = created.id
@@ -194,6 +200,27 @@ export function ActivityForm({ activity, entityId, userId }: ActivityFormProps) 
           <Label htmlFor="context" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Contexto</Label>
           <Input id="context" {...register('context')} placeholder="Ex: Projeto Alpha, Cliente XYZ, Financeiro..." className="mt-1.5 h-11 rounded-xl" />
         </div>
+        {/* Departamento — admin escolhe, outros veem o próprio */}
+        {departments.length > 0 && (
+          <div>
+            <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide flex items-center gap-1.5">
+              <Layers className="h-3.5 w-3.5" style={{ color: '#9B59B6' }} />Departamento
+            </Label>
+            {userRole === 'admin' ? (
+              <Select value={selectedDeptId || 'none'} onValueChange={(v) => setSelectedDeptId(v === 'none' ? '' : v)}>
+                <SelectTrigger className="mt-1.5 h-11 rounded-xl"><SelectValue placeholder="Selecione o departamento" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem departamento específico</SelectItem>
+                  {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="mt-1.5 h-11 rounded-xl border bg-gray-50 flex items-center px-3 text-sm text-gray-600">
+                {departments.find(d => d.id === (selectedDeptId || userDepartmentId))?.name || 'Sem departamento'}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Classification */}

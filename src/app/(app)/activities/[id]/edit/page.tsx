@@ -61,7 +61,7 @@ export default function EditActivityPage() {
       </div>
       <ActivityForm
         activity={activity}
-        entityId={profile.entity_id || ''}
+        entityId={profile.entity_id || ''} userDepartmentId={profile.department_id} userRole={profile.role}
         userId={profile.id}
       />
     </div>
