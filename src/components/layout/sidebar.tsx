@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, ListTodo, Building2, Users2, Tag,
   Settings2, LogOut, Menu, X, Zap, CalendarDays,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Layers,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
@@ -17,6 +17,7 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/activities', label: 'Atividades', icon: ListTodo },
   { href: '/calendar', label: 'Calendário', icon: CalendarDays },
+  { href: '/departments', label: 'Departamentos', icon: Layers },
   { href: '/entities', label: 'Entidades', icon: Building2 },
   { href: '/users', label: 'Usuários', icon: Users2 },
   { href: '/tags', label: 'Etiquetas', icon: Tag },

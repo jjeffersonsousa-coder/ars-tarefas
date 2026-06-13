@@ -19,6 +19,7 @@ export default function SettingsPage() {
   const [savingPassword, setSavingPassword] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [fullName, setFullName] = useState('')
+  const [cargo, setCargo] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [menuStyle, setMenuStyleState] = useState<MenuStyle>('sidebar')
@@ -31,7 +32,7 @@ export default function SettingsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       const { data: p } = await supabase.from('user_profiles').select('*').eq('id', user.id).single()
-      if (p) { setProfile(p as UserProfile); setFullName(p.full_name) }
+      if (p) { setProfile(p as UserProfile); setFullName(p.full_name); setCargo(p.cargo || '') }
       setLoading(false)
     }
     load()
@@ -61,8 +62,8 @@ export default function SettingsPage() {
   async function handleUpdateProfile() {
     if (!profile) return
     setSavingProfile(true)
-    const { error } = await supabase.from('user_profiles').update({ full_name: fullName, updated_at: new Date().toISOString() }).eq('id', profile.id)
-    if (error) { toast.error(error.message) } else { setProfile(prev => prev ? { ...prev, full_name: fullName } : prev); toast.success('Perfil atualizado!') }
+    const { error } = await supabase.from('user_profiles').update({ full_name: fullName, cargo: cargo || null, updated_at: new Date().toISOString() }).eq('id', profile.id)
+    if (error) { toast.error(error.message) } else { setProfile(prev => prev ? { ...prev, full_name: fullName, cargo: cargo || null } : prev); toast.success('Perfil atualizado!') }
     setSavingProfile(false)
   }
 
@@ -133,6 +134,11 @@ export default function SettingsPage() {
         <div>
           <Label htmlFor="fullName">Nome completo</Label>
           <Input id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} className="mt-1" />
+        </div>
+        <div>
+          <Label htmlFor="cargo">Cargo / Função</Label>
+          <Input id="cargo" value={cargo} onChange={e => setCargo(e.target.value)} placeholder="Ex: Gerente, Pastor, Secretário, Tesoureiro..." className="mt-1" />
+          <p className="text-xs text-gray-400 mt-1">Aparece na lista de usuários e ajuda no filtro por função</p>
         </div>
         <div>
           <Label>E-mail</Label>

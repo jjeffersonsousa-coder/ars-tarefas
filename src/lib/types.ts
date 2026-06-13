@@ -16,13 +16,23 @@ export interface Entity {
   updated_at: string
 }
 
+export interface Department {
+  id: string
+  entity_id: string
+  name: string
+  description?: string | null
+  created_at: string
+}
+
 export interface UserProfile {
   id: string
   entity_id?: string | null
   full_name: string
   email: string
   role: UserRole
+  cargo?: string | null
   avatar_url?: string | null
+  department_id?: string | null
   created_at: string
   updated_at: string
 }
