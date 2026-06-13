@@ -46,7 +46,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
       <div style={{ background: 'white', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '420px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#E8F1F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Mail style={{ width: '18px', height: '18px', color: '#1D4ED8' }} />
             </div>
             <div>
@@ -61,7 +61,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
             <label style={{ fontSize: '13px', fontWeight: 500, color: '#374151', display: 'block', marginBottom: '6px' }}>E-mail do convidado</label>
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@email.com" required className="h-11 rounded-xl" />
           </div>
-          <div style={{ background: '#EFF6FF', borderRadius: '10px', padding: '12px', fontSize: '12px', color: '#1E40AF', lineHeight: 1.6 }}>
+          <div style={{ background: '#E8F1F2', borderRadius: '10px', padding: '12px', fontSize: '12px', color: '#1E40AF', lineHeight: 1.6 }}>
             Será aberto o seu app de e-mail com mensagem pronta. Após o cadastro, você vincula o usuário ao departamento nesta página.
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>

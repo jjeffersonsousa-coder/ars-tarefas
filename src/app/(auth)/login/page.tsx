@@ -73,14 +73,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #13293D 0%, #006494 50%, #247BA0 100%)' }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 mb-4 shadow-lg shadow-blue-900/50">
+          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl mb-4 shadow-lg" style={{ background: 'linear-gradient(135deg, #1B98E0, #006494)', boxShadow: '0 8px 24px rgba(27,152,224,0.4)' }}>
             <Zap className="h-7 w-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white">ARS</h1>
-          <p className="text-slate-400 text-sm mt-1">Gerenciamento de Atividades e Rotinas</p>
+          <p className="text-sm mt-1" style={{ color: '#7EC8E3' }}>Gerenciamento de Atividades e Rotinas</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-white/20 p-6 shadow-2xl">
@@ -126,7 +126,7 @@ export default function LoginPage() {
                 placeholder="••••••••" required className="mt-1.5 h-11 rounded-xl" />
             </div>
             <Button type="submit" disabled={loading}
-              className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-700 to-blue-700 hover:from-blue-800 hover:to-blue-800 font-semibold shadow-md shadow-blue-200">
+              className="w-full h-11 rounded-xl font-semibold" style={{ background: 'linear-gradient(135deg, #006494, #13293D)', boxShadow: '0 4px 12px rgba(0,100,148,0.3)' }}
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Entrar
             </Button>

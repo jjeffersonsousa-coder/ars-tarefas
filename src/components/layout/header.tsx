@@ -48,7 +48,7 @@ export function Header({ user, menuStyle = 'sidebar', onMenuStyleChange, sidebar
   }
 
   return (
-    <header className="h-16 border-b border-gray-100 bg-white/90 backdrop-blur-sm flex items-center justify-between px-4 sm:px-6 shrink-0 sticky top-0 z-30 shadow-sm">
+    <header className="h-16 border-b flex items-center justify-between px-4 sm:px-6 shrink-0 sticky top-0 z-30" style={{ background: 'white', borderColor: '#D4E8F0', boxShadow: '0 1px 8px rgba(19,41,61,0.08)' }}>
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
@@ -59,10 +59,10 @@ export function Header({ user, menuStyle = 'sidebar', onMenuStyleChange, sidebar
         </button>
         <div className="lg:hidden w-8" />
         <div className="hidden sm:block">
-          <p className="text-sm font-semibold text-gray-800">
+          <p className="text-sm font-semibold" style={{ color: '#13293D' }}>
             Olá, {user.full_name.split(' ')[0]}! 👋
           </p>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs" style={{ color: '#247BA0' }}>
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>

@@ -204,7 +204,7 @@ function HelpModal({ onClose }: { onClose: () => void }) {
                     width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
                     padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
                     textAlign: 'left', fontSize: '13px', transition: 'all 0.15s',
-                    background: selected === i ? '#EFF6FF' : 'transparent',
+                    background: selected === i ? '#E8F1F2' : 'transparent',
                     color: selected === i ? '#1D4ED8' : '#4B5563',
                     fontWeight: selected === i ? 600 : 400,
                     marginBottom: '2px',
@@ -243,7 +243,7 @@ function HelpModal({ onClose }: { onClose: () => void }) {
               ))}
             </div>
 
-            <div style={{ marginTop: '16px', padding: '12px 14px', background: '#EFF6FF', borderRadius: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div style={{ marginTop: '16px', padding: '12px 14px', background: '#E8F1F2', borderRadius: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
               <CheckCircle2 style={{ width: '16px', height: '16px', color: '#2563EB', flexShrink: 0 }} />
               <p style={{ fontSize: '13px', color: '#1D4ED8', margin: 0 }}>Selecione outro tópico ao lado para ver mais tutoriais</p>
             </div>
