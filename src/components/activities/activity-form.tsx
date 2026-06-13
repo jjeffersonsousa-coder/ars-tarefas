@@ -133,17 +133,17 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
           if (oldVal !== newVal) changes.push({ field, old_value: oldVal || null, new_value: newVal || null })
         }
         const updatePayload = { title: payload.title, description: payload.description, context: payload.context, responsible_id: payload.responsible_id, delegated_to_id: payload.delegated_to_id, priority: payload.priority, status: payload.status, rich_notes: payload.rich_notes, due_date: payload.due_date, follow_up_date: payload.follow_up_date, updated_at: payload.updated_at, department_id: selectedDeptId || null }
-        const { error: updateError } = await db.from('activities').update(updatePayload).eq('id', activity.id)
+        const { error: updateError } = await (db as any).from('activities').update(updatePayload).eq('id', activity.id)
         if (updateError) throw updateError
         for (const change of changes) {
           await db.from('activity_history').insert({ activity_id: activity.id, user_id: userId, field_changed: change.field, old_value: change.old_value, new_value: change.new_value })
         }
       } else {
         const insertPayload = { entity_id: payload.entity_id, department_id: selectedDeptId || userDepartmentId || null, title: payload.title, description: payload.description, context: payload.context, responsible_id: payload.responsible_id, delegated_to_id: payload.delegated_to_id, priority: payload.priority, status: payload.status, rich_notes: payload.rich_notes, due_date: payload.due_date, follow_up_date: payload.follow_up_date, created_by: userId, updated_at: payload.updated_at }
-        const { data: created, error: insertError } = await db.from('activities').insert(insertPayload).select().single()
+        const { data: created, error: insertError } = await (db as any).from('activities').insert(insertPayload).select().single()
         if (insertError) throw insertError
         activityId = created.id
-        await db.from('activity_history').insert({ activity_id: activityId, user_id: userId, field_changed: 'created', old_value: null, new_value: null })
+        await db.from('activity_history').insert({ activity_id: activityId!, user_id: userId, field_changed: 'created', old_value: null, new_value: null })
       }
 
       if (activityId) {

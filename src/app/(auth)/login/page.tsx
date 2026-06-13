@@ -126,7 +126,7 @@ export default function LoginPage() {
                 placeholder="••••••••" required className="mt-1.5 h-11 rounded-xl" />
             </div>
             <Button type="submit" disabled={loading}
-              className="w-full h-11 rounded-xl font-semibold" style={{ background: 'linear-gradient(135deg, #006494, #13293D)', boxShadow: '0 4px 12px rgba(0,100,148,0.3)' }}
+              className="w-full h-11 rounded-xl font-semibold" style={{ background: 'linear-gradient(135deg, #006494, #13293D)', boxShadow: '0 4px 12px rgba(0,100,148,0.3)' }}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Entrar
             </Button>

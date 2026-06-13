@@ -89,7 +89,7 @@ export function TopNav({ user, menuStyle, onMenuStyleChange }: TopNavProps) {
           <DropdownMenuTrigger asChild>
             <button style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 8px', borderRadius: '10px', background: 'transparent', border: 'none', cursor: 'pointer' }}
               className="hover:bg-white/5 transition-colors">
-              <Avatar className="h-7 w-7" style={{ ring: '2px solid rgba(27,152,224,0.4)' }}>
+              <Avatar className="h-7 w-7 ring-2 ring-blue-400/40">
                 {user.avatar_url && <AvatarImage src={user.avatar_url} alt={user.full_name} />}
                 <AvatarFallback style={{ background: 'linear-gradient(135deg, #1B98E0, #006494)', color: 'white', fontSize: '11px', fontWeight: 600 }}>
                   {getInitials(user.full_name)}

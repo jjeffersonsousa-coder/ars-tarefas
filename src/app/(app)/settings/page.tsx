@@ -32,7 +32,7 @@ export default function SettingsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       const { data: p } = await supabase.from('user_profiles').select('*').eq('id', user.id).single()
-      if (p) { setProfile(p as UserProfile); setFullName(p.full_name); setCargo(p.cargo || '') }
+      if (p) { setProfile(p as UserProfile); setFullName(p.full_name); setCargo((p as any).cargo || '') }
       setLoading(false)
     }
     load()
@@ -62,7 +62,7 @@ export default function SettingsPage() {
   async function handleUpdateProfile() {
     if (!profile) return
     setSavingProfile(true)
-    const { error } = await supabase.from('user_profiles').update({ full_name: fullName, cargo: cargo || null, updated_at: new Date().toISOString() }).eq('id', profile.id)
+    const { error } = await (supabase as any).from('user_profiles').update({ full_name: fullName, cargo: cargo || null, updated_at: new Date().toISOString() }).eq('id', profile.id)
     if (error) { toast.error(error.message) } else { setProfile(prev => prev ? { ...prev, full_name: fullName, cargo: cargo || null } : prev); toast.success('Perfil atualizado!') }
     setSavingProfile(false)
   }

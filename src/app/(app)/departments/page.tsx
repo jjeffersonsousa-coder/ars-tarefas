@@ -28,10 +28,10 @@ function DeptModal({ dept, entityId, onClose, onSaved }: { dept: Department | nu
     setSaving(true)
 
     if (dept) {
-      const { data, error } = await supabase.from('departments').update({ name: name.trim(), description: description.trim() || null }).eq('id', dept.id).select().single()
+      const { data, error } = await (supabase as any).from('departments').update({ name: name.trim(), description: description.trim() || null }).eq('id', dept.id).select().single()
       if (error) { toast.error('Erro ao atualizar: ' + error.message) } else { onSaved(data as Department); onClose() }
     } else {
-      const { data, error } = await supabase.from('departments').insert({ name: name.trim(), description: description.trim() || null, entity_id: entityId }).select().single()
+      const { data, error } = await (supabase as any).from('departments').insert({ name: name.trim(), description: description.trim() || null, entity_id: entityId }).select().single()
       if (error) { toast.error('Erro ao criar: ' + error.message) } else { onSaved(data as Department); onClose() }
     }
     setSaving(false)

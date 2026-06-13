@@ -96,7 +96,7 @@ export default function ActivitiesPage() {
   async function handleQuickCreate(e: React.KeyboardEvent) {
     if (e.key !== 'Enter' || !quickTitle.trim() || !profile) return
     setQuickSaving(true)
-    const { error } = await supabase.from('activities').insert({
+    const { error } = await (supabase as any).from('activities').insert({
       title: quickTitle.trim(),
       entity_id: profile.entity_id,
       department_id: profile.department_id || null,

@@ -118,7 +118,7 @@ export default function UsersPage() {
   }
 
   async function saveCargo(userId: string) {
-    await supabase.from('user_profiles').update({ cargo: cargoValue || null }).eq('id', userId)
+    await (supabase as any).from('user_profiles').update({ cargo: cargoValue || null }).eq('id', userId)
     setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, cargo: cargoValue || null } : u))
     setEditingCargo(null)
     toast.success('Cargo atualizado!')
