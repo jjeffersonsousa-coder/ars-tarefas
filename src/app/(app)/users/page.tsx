@@ -93,14 +93,12 @@ function InviteModal({ onClose, entityId }: { onClose: () => void; entityId: str
             </div>
             <div>
               <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Papel no sistema</Label>
-              <Select value={role} onValueChange={setRole}>
-                <SelectTrigger className="mt-1.5 h-11 rounded-xl"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="editor">Editor</SelectItem>
-                  <SelectItem value="visualizador">Visualizador</SelectItem>
-                </SelectContent>
-              </Select>
+              <select value={role} onChange={(e) => setRole(e.target.value)}
+                style={{ marginTop: '6px', height: '44px', width: '100%', borderRadius: '12px', border: '1px solid #E5E7EB', padding: '0 12px', fontSize: '14px', background: 'white', color: '#111827', cursor: 'pointer' }}>
+                <option value="admin">Administrador</option>
+                <option value="editor">Editor</option>
+                <option value="visualizador">Visualizador</option>
+              </select>
             </div>
           </div>
           <div style={{ background: '#E8F4FD', borderRadius: '10px', padding: '12px', fontSize: '12px', color: '#1E5478', lineHeight: 1.6 }}>
