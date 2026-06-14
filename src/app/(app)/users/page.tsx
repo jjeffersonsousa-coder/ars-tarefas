@@ -41,9 +41,12 @@ function InviteModal({ onClose, entityId }: { onClose: () => void; entityId: str
     if (!email.trim() || !fullName.trim()) return
     setSaving(true)
     try {
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/invite-user', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token || ''}` },
         body: JSON.stringify({ email: email.trim(), full_name: fullName.trim(), cargo: cargo.trim(), role }),
       })
       const data = await res.json()

@@ -1,19 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
 
 export async function POST(req: NextRequest) {
-  const cookieStore = cookies()
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!serviceRoleKey) {
+    return NextResponse.json({ error: 'Chave de serviço não configurada no servidor' }, { status: 500 })
+  }
 
-  // Use getUser (more reliable than getSession in route handlers)
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  const adminClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  })
+
+  // Verify caller via Bearer token
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  }
+  const token = authHeader.replace('Bearer ', '')
+  const { data: { user }, error: authError } = await adminClient.auth.getUser(token)
   if (authError || !user) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
-  const { data: profile } = await supabase
+  const { data: profile } = await adminClient
     .from('user_profiles').select('role, entity_id').eq('id', user.id).single()
 
   if (profile?.role !== 'admin') {
@@ -24,15 +33,6 @@ export async function POST(req: NextRequest) {
   if (!email || !full_name) {
     return NextResponse.json({ error: 'E-mail e nome são obrigatórios' }, { status: 400 })
   }
-
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!serviceRoleKey) {
-    return NextResponse.json({ error: 'Chave de serviço não configurada no servidor' }, { status: 500 })
-  }
-
-  const adminClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  })
 
   const { data: invited, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
     data: { full_name },
