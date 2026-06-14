@@ -93,7 +93,7 @@ export default function EntitiesPage() {
     setSaving(false)
   }
 
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = profile?.role === 'super_admin' || profile?.role === 'admin'
 
   return (
     <div className="space-y-6">

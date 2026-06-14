@@ -8,8 +8,20 @@ const DARK = '#13293D'
 const LIGHT = '#E8F1F2'
 
 function fmtDate(iso?: string | null) {
-  if (!iso) return '—'
+  if (!iso) return '-'
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+// jsPDF Helvetica doesn't support accented chars — replace for PDF only
+function pdf(text: string): string {
+  return text
+    .replace(/[áàâã]/g, 'a').replace(/[ÁÀÂÃ]/g, 'A')
+    .replace(/[éèê]/g, 'e').replace(/[ÉÈÊ]/g, 'E')
+    .replace(/[íìî]/g, 'i').replace(/[ÍÌÎ]/g, 'I')
+    .replace(/[óòôõ]/g, 'o').replace(/[ÓÒÔÕ]/g, 'O')
+    .replace(/[úùû]/g, 'u').replace(/[ÚÙÛ]/g, 'U')
+    .replace(/ç/g, 'c').replace(/Ç/g, 'C')
+    .replace(/ñ/g, 'n').replace(/Ñ/g, 'N')
 }
 
 export async function exportToExcel(activities: Activity[], filename = 'atividades') {
@@ -26,16 +38,16 @@ export async function exportToExcel(activities: Activity[], filename = 'atividad
     'Delegado para': (a.delegated_to as { full_name?: string } | null)?.full_name || '',
     'Vencimento': fmtDate(a.due_date),
     'Follow-up': fmtDate(a.follow_up_date),
+    'Data de Conclusão': a.status === 'concluida' ? fmtDate(a.updated_at) : '',
     'Criado em': fmtDate(a.created_at),
   }))
 
   const ws = utils.json_to_sheet(rows)
 
-  // Column widths
   ws['!cols'] = [
     { wch: 4 }, { wch: 40 }, { wch: 30 }, { wch: 20 },
     { wch: 12 }, { wch: 14 }, { wch: 22 }, { wch: 22 },
-    { wch: 14 }, { wch: 14 }, { wch: 14 },
+    { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 14 },
   ]
 
   const wb = utils.book_new()
@@ -71,7 +83,7 @@ export async function exportToPDF(activities: Activity[], title = 'Relatório de
   // Report title right side
   doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
-  doc.text(title, W - 14, 13, { align: 'right' })
+  doc.text(pdf(title), W - 14, 13, { align: 'right' })
 
   doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
@@ -106,41 +118,58 @@ export async function exportToPDF(activities: Activity[], title = 'Relatório de
   })
 
   // Table
+  const STATUS_LABELS_PDF: Record<string, string> = {
+    pendente: 'Pendente',
+    em_andamento: 'Em Andamento',
+    aguardando: 'Aguardando',
+    concluida: 'Concluida',
+    cancelada: 'Cancelada',
+  }
+
+  const PRIORITY_LABELS_PDF: Record<string, string> = {
+    urgente: 'Urgente',
+    alta: 'Alta',
+    media: 'Media',
+    baixa: 'Baixa',
+  }
+
   autoTable(doc, {
     startY: 52,
-    head: [['#', 'Título', 'Contexto', 'Prioridade', 'Status', 'Responsável', 'Vencimento']],
+    head: [['#', 'Titulo', 'Contexto', 'Prioridade', 'Status', 'Responsavel', 'Vencimento', 'Conclusao']],
     body: activities.map((a, i) => [
       i + 1,
-      a.title,
-      a.context || '—',
-      PRIORITY_LABELS[a.priority],
-      STATUS_LABELS[a.status],
-      (a.responsible as { full_name?: string } | null)?.full_name || '—',
+      pdf(a.title),
+      pdf(a.context || '-'),
+      PRIORITY_LABELS_PDF[a.priority] || a.priority,
+      STATUS_LABELS_PDF[a.status] || a.status,
+      pdf((a.responsible as { full_name?: string } | null)?.full_name || '-'),
       fmtDate(a.due_date),
+      a.status === 'concluida' ? fmtDate(a.updated_at) : '-',
     ]),
     headStyles: {
       fillColor: hexToRgb(PRIMARY),
       textColor: [255, 255, 255],
       fontStyle: 'bold',
       fontSize: 9,
-      cellPadding: 4,
+      cellPadding: { top: 5, bottom: 5, left: 4, right: 4 },
     },
     alternateRowStyles: {
       fillColor: hexToRgb(LIGHT),
     },
     bodyStyles: {
       fontSize: 8,
-      cellPadding: 3,
+      cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
       textColor: [30, 40, 50],
     },
     columnStyles: {
       0: { cellWidth: 8, halign: 'center' },
-      1: { cellWidth: 70 },
-      2: { cellWidth: 40 },
-      3: { cellWidth: 22, halign: 'center' },
-      4: { cellWidth: 26, halign: 'center' },
-      5: { cellWidth: 40 },
-      6: { cellWidth: 24, halign: 'center' },
+      1: { cellWidth: 62 },
+      2: { cellWidth: 36 },
+      3: { cellWidth: 20, halign: 'center' },
+      4: { cellWidth: 28, halign: 'center' },
+      5: { cellWidth: 38 },
+      6: { cellWidth: 22, halign: 'center' },
+      7: { cellWidth: 22, halign: 'center' },
     },
     didDrawCell: (data) => {
       if (data.section === 'body' && data.column.index === 4) {
@@ -167,7 +196,7 @@ export async function exportToPDF(activities: Activity[], title = 'Relatório de
           doc.setFontSize(7)
           doc.setFont('helvetica', 'bold')
           doc.text(
-            STATUS_LABELS[status],
+            STATUS_LABELS_PDF[status] || status,
             data.cell.x + data.cell.width / 2,
             data.cell.y + data.cell.height / 2 + 0.5,
             { align: 'center', baseline: 'middle' }
@@ -188,7 +217,7 @@ export async function exportToPDF(activities: Activity[], title = 'Relatório de
     doc.setTextColor(200, 215, 225)
     doc.setFontSize(7)
     doc.setFont('helvetica', 'normal')
-    doc.text('ARS — Gerenciamento de Atividades e Rotinas', 14, h - 3.5)
+    doc.text('ARS - Gerenciamento de Atividades e Rotinas', 14, h - 3.5)
     doc.text(`Página ${p} de ${pages}`, W - 14, h - 3.5, { align: 'right' })
   }
 

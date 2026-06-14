@@ -91,7 +91,7 @@ export default function ActivitiesPage() {
 
   useEffect(() => { fetchActivities() }, [fetchActivities])
 
-  const canEdit = profile?.role === 'admin' || profile?.role === 'editor'
+  const canEdit = profile?.role === 'super_admin' || profile?.role === 'admin' || profile?.role === 'gestor' || profile?.role === 'editor'
 
   async function handleQuickCreate(e: React.KeyboardEvent) {
     if (e.key !== 'Enter' || !quickTitle.trim() || !profile) return

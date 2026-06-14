@@ -1,7 +1,7 @@
 export type EntityType = 'empresa' | 'familia' | 'pessoa_fisica'
 export type RecurrenceType = 'daily' | 'weekly' | 'monthly' | 'yearly'
 export type WeekendHandling = 'none' | 'before' | 'after'
-export type UserRole = 'admin' | 'editor' | 'visualizador'
+export type UserRole = 'super_admin' | 'admin' | 'gestor' | 'editor' | 'visualizador'
 export type Priority = 'urgente' | 'alta' | 'media' | 'baixa'
 export type ActivityStatus = 'pendente' | 'em_andamento' | 'aguardando' | 'concluida' | 'cancelada'
 export type NotificationType = 'vencimento' | 'follow_up' | 'delegacao' | 'atualizacao'
@@ -171,9 +171,19 @@ export const ENTITY_TYPE_LABELS: Record<EntityType, string> = {
 }
 
 export const ROLE_LABELS: Record<UserRole, string> = {
+  super_admin: 'Super Admin',
   admin: 'Administrador',
+  gestor: 'Gestor',
   editor: 'Editor',
   visualizador: 'Visualizador',
+}
+
+export const ROLE_COLORS: Record<UserRole, string> = {
+  super_admin: 'bg-purple-100 text-purple-800 border-purple-200',
+  admin: 'bg-blue-100 text-blue-800 border-blue-200',
+  gestor: 'bg-orange-100 text-orange-800 border-orange-200',
+  editor: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  visualizador: 'bg-gray-100 text-gray-700 border-gray-200',
 }
 
 export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {

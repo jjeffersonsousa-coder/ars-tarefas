@@ -150,7 +150,7 @@ export default function DashboardPage() {
     return list
   }, [allActivities, activeStatFilter, filters])
 
-  const canEdit = profile?.role === 'admin' || profile?.role === 'editor'
+  const canEdit = profile?.role === 'super_admin' || profile?.role === 'admin' || profile?.role === 'gestor' || profile?.role === 'editor'
   const hasFilters = activeStatFilter || Object.values(filters).some(v => v && (Array.isArray(v) ? v.length > 0 : true))
 
   return (

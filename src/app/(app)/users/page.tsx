@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { UserProfile, Department, ROLE_LABELS } from '@/lib/types'
+import { UserProfile, Department, UserRole, ROLE_LABELS, ROLE_COLORS } from '@/lib/types'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -95,7 +95,9 @@ function InviteModal({ onClose, entityId }: { onClose: () => void; entityId: str
               <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Papel no sistema</Label>
               <select value={role} onChange={(e) => setRole(e.target.value)}
                 style={{ marginTop: '6px', height: '44px', width: '100%', borderRadius: '12px', border: '1px solid #E5E7EB', padding: '0 12px', fontSize: '14px', background: 'white', color: '#111827', cursor: 'pointer' }}>
+                <option value="super_admin">Super Admin</option>
                 <option value="admin">Administrador</option>
+                <option value="gestor">Gestor</option>
                 <option value="editor">Editor</option>
                 <option value="visualizador">Visualizador</option>
               </select>
@@ -309,9 +311,9 @@ export default function UsersPage() {
     load()
   }, [])
 
-  async function updateRole(userId: string, newRole: 'admin' | 'editor' | 'visualizador') {
+  async function updateRole(userId: string, newRole: UserRole) {
     setUpdatingId(userId)
-    await supabase.from('user_profiles').update({ role: newRole }).eq('id', userId)
+    await (supabase as any).from('user_profiles').update({ role: newRole }).eq('id', userId)
     setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, role: newRole } : u))
     setUpdatingId(null)
     toast.success('Papel atualizado!')
@@ -324,7 +326,7 @@ export default function UsersPage() {
     toast.success('Cargo atualizado!')
   }
 
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = profile?.role === 'super_admin' || profile?.role === 'admin'
 
   const filtered = users.filter((u) => {
     const matchSearch = !search || u.full_name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()) || (u.cargo ?? '').toLowerCase().includes(search.toLowerCase())
@@ -333,11 +335,6 @@ export default function UsersPage() {
     return matchSearch && matchRole && matchDept
   })
 
-  const roleColors: Record<string, string> = {
-    admin: 'bg-blue-100 text-blue-800 border-blue-200',
-    editor: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-    visualizador: 'bg-gray-100 text-gray-700 border-gray-200',
-  }
 
   return (
     <div className="space-y-6">
@@ -363,7 +360,9 @@ export default function UsersPage() {
           <SelectTrigger className="w-40 h-10 rounded-xl text-sm"><SelectValue placeholder="Papel" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os papéis</SelectItem>
+            <SelectItem value="super_admin">Super Admin</SelectItem>
             <SelectItem value="admin">Administrador</SelectItem>
+            <SelectItem value="gestor">Gestor</SelectItem>
             <SelectItem value="editor">Editor</SelectItem>
             <SelectItem value="visualizador">Visualizador</SelectItem>
           </SelectContent>
@@ -406,7 +405,7 @@ export default function UsersPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold text-gray-900">{user.full_name}</p>
                       {user.id === profile?.id && <span className="text-xs text-gray-400">(você)</span>}
-                      <Badge className={`text-[10px] border ${roleColors[user.role]}`}>{ROLE_LABELS[user.role]}</Badge>
+                      <Badge className={`text-[10px] border ${ROLE_COLORS[user.role]}`}>{ROLE_LABELS[user.role]}</Badge>
                     </div>
                     <p className="text-sm text-gray-500">{user.email}</p>
                     <div className="flex flex-wrap items-center gap-3 mt-1">
@@ -454,10 +453,12 @@ export default function UsersPage() {
                   {isAdmin && (
                     <div className="flex flex-col sm:flex-row gap-2 shrink-0">
                       {user.id !== profile?.id && (
-                        <Select value={user.role} onValueChange={(v) => updateRole(user.id, v as 'admin' | 'editor' | 'visualizador')} disabled={updatingId === user.id}>
+                        <Select value={user.role} onValueChange={(v) => updateRole(user.id, v as UserRole)} disabled={updatingId === user.id}>
                           <SelectTrigger className="h-8 w-36 text-xs rounded-lg"><SelectValue /></SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="super_admin">Super Admin</SelectItem>
                             <SelectItem value="admin">Administrador</SelectItem>
+                            <SelectItem value="gestor">Gestor</SelectItem>
                             <SelectItem value="editor">Editor</SelectItem>
                             <SelectItem value="visualizador">Visualizador</SelectItem>
                           </SelectContent>

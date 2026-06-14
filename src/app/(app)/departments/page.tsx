@@ -108,7 +108,7 @@ export default function DepartmentsPage() {
     }
   }
 
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = profile?.role === 'super_admin' || profile?.role === 'admin'
 
   return (
     <div className="space-y-6 max-w-3xl">

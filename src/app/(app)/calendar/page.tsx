@@ -53,7 +53,7 @@ export default function CalendarPage() {
     init()
   }, [])
 
-  const canEdit = profile?.role === 'admin' || profile?.role === 'editor'
+  const canEdit = profile?.role === 'super_admin' || profile?.role === 'admin' || profile?.role === 'gestor' || profile?.role === 'editor'
 
   function prevMonth() {
     if (month === 0) { setYear(y => y - 1); setMonth(11) } else setMonth(m => m - 1)

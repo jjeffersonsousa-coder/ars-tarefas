@@ -19,14 +19,18 @@ import { LayoutToggle } from './layout-toggle'
 import { type MenuStyle } from '@/lib/layout-preferences'
 
 const ROLE_LABELS: Record<string, string> = {
+  super_admin: 'Super Admin',
   admin: 'Administrador',
+  gestor: 'Gestor',
   editor: 'Editor',
   visualizador: 'Visualizador',
 }
 
 const ROLE_COLORS: Record<string, string> = {
+  super_admin: 'bg-purple-100 text-purple-800 border-purple-200',
   admin: 'bg-blue-100 text-blue-800 border-blue-200',
-  editor: 'bg-blue-100 text-blue-700 border-blue-200',
+  gestor: 'bg-orange-100 text-orange-800 border-orange-200',
+  editor: 'bg-indigo-100 text-indigo-800 border-indigo-200',
   visualizador: 'bg-gray-100 text-gray-700 border-gray-200',
 }
 

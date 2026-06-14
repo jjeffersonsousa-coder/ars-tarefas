@@ -83,7 +83,7 @@ export default function TagsPage() {
     setTags((prev) => prev.filter((t) => t.id !== tagId))
   }
 
-  const canEdit = profile?.role === 'admin' || profile?.role === 'editor'
+  const canEdit = profile?.role === 'super_admin' || profile?.role === 'admin' || profile?.role === 'gestor' || profile?.role === 'editor'
 
   return (
     <div className="space-y-6">
