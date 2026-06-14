@@ -52,10 +52,10 @@ export function Header({ user, menuStyle = 'sidebar', onMenuStyleChange, sidebar
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
-          className="hidden lg:flex p-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-500"
+          className="hidden lg:flex p-2.5 rounded-xl hover:bg-gray-100 transition-colors text-gray-500"
           title={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
         >
-          {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          {sidebarCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
         </button>
         <div className="lg:hidden w-8" />
         <div className="hidden sm:block">

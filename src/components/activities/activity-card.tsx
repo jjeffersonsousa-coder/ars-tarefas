@@ -124,8 +124,8 @@ export function ActivityCard({ activity, onUpdate, canEdit = false, compact = fa
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between mt-4 ml-5">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between mt-4 ml-5 gap-2">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           {activity.due_date && (
             <div className={cn(
               'flex items-center gap-1.5 text-xs font-medium',
@@ -149,14 +149,13 @@ export function ActivityCard({ activity, onUpdate, canEdit = false, compact = fa
                   {getInitials(activity.responsible.full_name)}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-xs text-gray-500 font-medium">{activity.responsible.full_name.split(' ')[0]}</span>
             </div>
           )}
         </div>
 
         {canEdit ? (
           <Select value={status} onValueChange={(v) => handleStatusChange(v as ActivityStatus)} disabled={updating}>
-            <SelectTrigger className={cn('h-7 text-xs px-2.5 rounded-lg w-auto gap-1 border font-medium', STATUS_COLORS[status])}>
+            <SelectTrigger className={cn('h-7 text-xs px-2.5 rounded-lg w-28 gap-1 border font-medium shrink-0', STATUS_COLORS[status])}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
