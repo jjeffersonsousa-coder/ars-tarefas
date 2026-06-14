@@ -9,7 +9,8 @@ import { ActivityFiltersBar } from '@/components/activities/activity-filters'
 import { ActivityCard } from '@/components/activities/activity-card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Plus, RefreshCw, AlertTriangle, Bell, CalendarClock, CalendarDays } from 'lucide-react'
+import { Plus, RefreshCw, AlertTriangle, Bell, CalendarDays, ChevronDown } from 'lucide-react'
+import { Input } from '@/components/ui/input'
 import Link from 'next/link'
 import { isOverdue, isDueToday, formatDate } from '@/lib/utils'
 import { addDays, startOfDay, parseISO, isToday } from 'date-fns'
@@ -25,12 +26,43 @@ function SectionHeader({ icon: Icon, label, count, color }: { icon: React.Elemen
   )
 }
 
+type Period = 'today' | 'week' | 'month' | 'year' | 'custom'
+
+function getPeriodRange(period: Period, customFrom: string, customTo: string): { from: string; to: string } | null {
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  if (period === 'today') { const t = fmt(now); return { from: t, to: t } }
+  if (period === 'week') {
+    const mon = new Date(now); mon.setDate(now.getDate() - now.getDay() + 1)
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6)
+    return { from: fmt(mon), to: fmt(sun) }
+  }
+  if (period === 'month') {
+    const from = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    return { from, to: fmt(last) }
+  }
+  if (period === 'year') {
+    return { from: `${now.getFullYear()}-01-01`, to: `${now.getFullYear()}-12-31` }
+  }
+  if (period === 'custom' && customFrom && customTo) return { from: customFrom, to: customTo }
+  return null
+}
+
+const PERIOD_LABELS: Record<Period, string> = {
+  today: 'Hoje', week: 'Semana', month: 'Mês', year: 'Ano', custom: 'Período'
+}
+
 export default function DashboardPage() {
   const [allActivities, setAllActivities] = useState<Activity[]>([])
   const [filters, setFilters] = useState<ActivityFilters>({})
   const [activeStatFilter, setActiveStatFilter] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [period, setPeriod] = useState<Period>('month')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
   const supabase = createClient()
 
   useEffect(() => {
@@ -60,14 +92,25 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchActivities() }, [fetchActivities])
 
+  const periodActivities = useMemo(() => {
+    const range = getPeriodRange(period, customFrom, customTo)
+    if (!range) return allActivities
+    return allActivities.filter((a) => {
+      const date = a.due_date || a.created_at
+      if (!date) return false
+      const d = date.slice(0, 10)
+      return d >= range.from && d <= range.to
+    })
+  }, [allActivities, period, customFrom, customTo])
+
   const stats: DashboardStats = useMemo(() => ({
-    total: allActivities.length,
-    overdue: allActivities.filter((a) => isOverdue(a.due_date) && a.status !== 'concluida' && a.status !== 'cancelada').length,
-    dueToday: allActivities.filter((a) => isDueToday(a.due_date)).length,
-    inProgress: allActivities.filter((a) => a.status === 'em_andamento').length,
-    completed: allActivities.filter((a) => a.status === 'concluida').length,
-    pending: allActivities.filter((a) => a.status === 'pendente').length,
-  }), [allActivities])
+    total: periodActivities.length,
+    overdue: periodActivities.filter((a) => isOverdue(a.due_date) && a.status !== 'concluida' && a.status !== 'cancelada').length,
+    dueToday: periodActivities.filter((a) => isDueToday(a.due_date)).length,
+    inProgress: periodActivities.filter((a) => a.status === 'em_andamento').length,
+    completed: periodActivities.filter((a) => a.status === 'concluida').length,
+    pending: periodActivities.filter((a) => a.status === 'pendente').length,
+  }), [periodActivities])
 
   // Seções especiais
   const followUpToday = useMemo(() =>
@@ -90,7 +133,7 @@ export default function DashboardPage() {
 
   // Lista filtrada para a seção geral
   const filteredActivities = useMemo(() => {
-    let list = allActivities
+    let list = periodActivities
     if (activeStatFilter === 'overdue') list = list.filter((a) => isOverdue(a.due_date) && a.status !== 'concluida' && a.status !== 'cancelada')
     else if (activeStatFilter === 'dueToday') list = list.filter((a) => isDueToday(a.due_date))
     else if (activeStatFilter === 'inProgress') list = list.filter((a) => a.status === 'em_andamento')
@@ -112,23 +155,48 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-500 text-sm mt-0.5">Visão geral das suas atividades</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Period filter */}
+          <div className="flex items-center bg-white border border-gray-200 rounded-xl p-1 gap-0.5">
+            {(['today','week','month','year','custom'] as Period[]).map(p => (
+              <button key={p} onClick={() => setPeriod(p)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                style={period === p ? { background: '#006494', color: 'white' } : { color: '#6B7280' }}>
+                {PERIOD_LABELS[p]}
+              </button>
+            ))}
+          </div>
           <Button variant="outline" size="sm" onClick={fetchActivities} className="rounded-xl gap-2">
             <RefreshCw className="h-3.5 w-3.5" />
-            Atualizar
           </Button>
           {canEdit && (
-            <Button asChild className="bg-gradient-to-r from-blue-700 to-blue-700 hover:from-blue-800 hover:to-blue-800 shadow-md shadow-blue-200 rounded-xl">
+            <Button asChild className="rounded-xl" style={{ background: 'linear-gradient(135deg, #006494, #13293D)' }}>
               <Link href="/activities/new"><Plus className="h-4 w-4 mr-2" />Nova Atividade</Link>
             </Button>
           )}
         </div>
       </div>
+
+      {/* Custom date range */}
+      {period === 'custom' && (
+        <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3">
+          <CalendarDays className="h-4 w-4 text-gray-400 shrink-0" />
+          <span className="text-sm text-gray-500 shrink-0">De</span>
+          <Input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="h-8 rounded-lg w-36 text-sm" />
+          <span className="text-sm text-gray-500 shrink-0">até</span>
+          <Input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="h-8 rounded-lg w-36 text-sm" />
+          {customFrom && customTo && (
+            <span className="text-xs text-gray-400 ml-auto">
+              {periodActivities.length} atividade{periodActivities.length !== 1 ? 's' : ''} no período
+            </span>
+          )}
+        </div>
+      )}
 
       <StatsCards stats={stats} activeFilter={activeStatFilter} onFilter={(k) => { setActiveStatFilter(k); setFilters({}) }} />
 

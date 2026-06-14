@@ -9,7 +9,7 @@ import { ActivityKanban } from '@/components/activities/activity-kanban'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Plus, LayoutList, KanbanSquare, ArrowUpDown, Upload, Loader2 } from 'lucide-react'
+import { Plus, LayoutList, KanbanSquare, ArrowUpDown, Upload, Loader2, FileSpreadsheet, FileText } from 'lucide-react'
 import Link from 'next/link'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
@@ -127,17 +127,25 @@ export default function ActivitiesPage() {
             {loading ? '...' : `${activities.length} atividade${activities.length !== 1 ? 's' : ''} encontrada${activities.length !== 1 ? 's' : ''}`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" className="rounded-xl gap-2 border-green-200 text-green-700 hover:bg-green-50"
+            onClick={() => import('@/lib/export').then(m => m.exportToExcel(activities))}>
+            <FileSpreadsheet className="h-3.5 w-3.5" />Excel
+          </Button>
+          <Button variant="outline" size="sm" className="rounded-xl gap-2 border-red-200 text-red-700 hover:bg-red-50"
+            onClick={() => import('@/lib/export').then(m => m.exportToPDF(activities))}>
+            <FileText className="h-3.5 w-3.5" />PDF
+          </Button>
           {canEdit && (
             <Button asChild variant="outline" size="sm" className="rounded-xl gap-2">
               <Link href="/activities/import">
                 <Upload className="h-3.5 w-3.5" />
-                Importar Excel
+                Importar
               </Link>
             </Button>
           )}
           {canEdit && (
-            <Button asChild className="bg-gradient-to-r from-blue-700 to-blue-700 hover:from-blue-800 hover:to-blue-800 shadow-md shadow-blue-200 rounded-xl">
+            <Button asChild className="rounded-xl" style={{ background: 'linear-gradient(135deg, #006494, #13293D)' }}>
               <Link href="/activities/new"><Plus className="h-4 w-4 mr-2" />Nova Atividade</Link>
             </Button>
           )}
