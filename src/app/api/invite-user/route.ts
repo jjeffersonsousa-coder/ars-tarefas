@@ -7,11 +7,14 @@ export async function POST(req: NextRequest) {
   const cookieStore = cookies()
   const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  // Use getUser (more reliable than getSession in route handlers)
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  }
 
   const { data: profile } = await supabase
-    .from('user_profiles').select('role, entity_id').eq('id', session.user.id).single()
+    .from('user_profiles').select('role, entity_id').eq('id', user.id).single()
 
   if (profile?.role !== 'admin') {
     return NextResponse.json({ error: 'Apenas administradores podem convidar usuários' }, { status: 403 })
@@ -24,7 +27,7 @@ export async function POST(req: NextRequest) {
 
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!serviceRoleKey) {
-    return NextResponse.json({ error: 'Chave de serviço não configurada' }, { status: 500 })
+    return NextResponse.json({ error: 'Chave de serviço não configurada no servidor' }, { status: 500 })
   }
 
   const adminClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey, {
