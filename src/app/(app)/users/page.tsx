@@ -7,15 +7,28 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { getInitials, formatDate } from '@/lib/utils'
-import { Users, Mail, Search, X, Building2, Send, Filter } from 'lucide-react'
+import { Users, Mail, Search, X, Building2, UserPlus, Filter, Shield, Crown, Layers } from 'lucide-react'
 import { toast } from 'sonner'
 import { createPortal } from 'react-dom'
 
-function InviteModal({ onClose }: { onClose: () => void }) {
+interface UserDepartment {
+  id: string
+  user_id: string
+  department_id: string
+  role: 'gestor' | 'usuario'
+  department?: Department
+}
+
+// Modal: Cadastrar/Convidar Usuário
+function InviteModal({ onClose, entityId }: { onClose: () => void; entityId: string }) {
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
-  const [sending, setSending] = useState(false)
+  const [cargo, setCargo] = useState('')
+  const [role, setRole] = useState('editor')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
@@ -23,51 +36,77 @@ function InviteModal({ onClose }: { onClose: () => void }) {
     return () => document.removeEventListener('keydown', handleKey)
   }, [onClose])
 
-  function handleInvite(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!email.trim()) return
-    setSending(true)
-    const registerUrl = `${window.location.origin}/register`
-    const subject = encodeURIComponent('Convite para o sistema ARS')
-    const body = encodeURIComponent(
-      `Olá!\n\nVocê foi convidado(a) para fazer parte do nosso sistema de gestão de atividades ARS.\n\nClique no link abaixo para criar sua conta:\n${registerUrl}\n\nApós o cadastro, o administrador irá vincular você ao departamento correto.\n\nAbraços!`
-    )
-    window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank')
-    toast.success('Abrindo seu app de e-mail com o convite pronto!')
-    setSending(false)
-    onClose()
+    if (!email.trim() || !fullName.trim()) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/invite-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), full_name: fullName.trim(), cargo: cargo.trim(), role }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erro ao convidar')
+      toast.success('Convite enviado!', { description: `${fullName} receberá um e-mail para definir sua senha.` })
+      onClose()
+    } catch (err: unknown) {
+      toast.error('Erro ao enviar convite', { description: err instanceof Error ? err.message : 'Tente novamente' })
+    } finally {
+      setSaving(false)
+    }
   }
 
   return createPortal(
-    <div
-      style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.5)' }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
-    >
-      <div style={{ background: 'white', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '420px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }} onClick={(e) => e.stopPropagation()}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.5)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div style={{ background: 'white', borderRadius: '20px', padding: '28px', width: '100%', maxWidth: '460px', boxShadow: '0 24px 48px rgba(0,0,0,0.2)' }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#E8F1F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Mail style={{ width: '18px', height: '18px', color: '#1D4ED8' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, #006494, #13293D)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <UserPlus style={{ width: '20px', height: '20px', color: 'white' }} />
             </div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: '15px', color: '#111827' }}>Convidar por E-mail</div>
-              <div style={{ fontSize: '12px', color: '#9CA3AF' }}>Envie o link de cadastro</div>
+              <div style={{ fontWeight: 700, fontSize: '16px', color: '#111827' }}>Cadastrar Usuário</div>
+              <div style={{ fontSize: '12px', color: '#9CA3AF' }}>Envio de convite por e-mail</div>
             </div>
           </div>
           <button onClick={onClose} style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#F9FAFB', cursor: 'pointer', fontSize: '18px', color: '#6B7280' }}>×</button>
         </div>
-        <form onSubmit={handleInvite} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>
-            <label style={{ fontSize: '13px', fontWeight: 500, color: '#374151', display: 'block', marginBottom: '6px' }}>E-mail do convidado</label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@email.com" required className="h-11 rounded-xl" />
+            <Label htmlFor="inv-name" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Nome completo *</Label>
+            <Input id="inv-name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="João da Silva" required className="mt-1.5 h-11 rounded-xl" autoFocus />
           </div>
-          <div style={{ background: '#E8F1F2', borderRadius: '10px', padding: '12px', fontSize: '12px', color: '#1E40AF', lineHeight: 1.6 }}>
-            Será aberto o seu app de e-mail com mensagem pronta. Após o cadastro, você vincula o usuário ao departamento nesta página.
+          <div>
+            <Label htmlFor="inv-email" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">E-mail *</Label>
+            <Input id="inv-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="joao@email.com" required className="mt-1.5 h-11 rounded-xl" />
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Cargo / Função</Label>
+              <Input value={cargo} onChange={(e) => setCargo(e.target.value)} placeholder="Ex: Pastor, Tesoureiro..." className="mt-1.5 h-11 rounded-xl" />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Papel no sistema</Label>
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger className="mt-1.5 h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                  <SelectItem value="editor">Editor</SelectItem>
+                  <SelectItem value="visualizador">Visualizador</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div style={{ background: '#E8F4FD', borderRadius: '10px', padding: '12px', fontSize: '12px', color: '#1E5478', lineHeight: 1.6 }}>
+            <strong>Como funciona:</strong> o usuário receberá um e-mail com link para definir sua senha e acessar o sistema. Após o cadastro, você poderá atribuir os departamentos.
+          </div>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
             <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-xl">Cancelar</Button>
-            <Button type="submit" disabled={sending} className="flex-1 rounded-xl bg-blue-700 hover:bg-blue-800 gap-2">
-              <Send className="h-4 w-4" />Enviar Convite
+            <Button type="submit" disabled={saving || !fullName.trim() || !email.trim()} className="flex-1 rounded-xl gap-2" style={{ background: 'linear-gradient(135deg, #006494, #13293D)' }}>
+              <Mail className="h-4 w-4" />{saving ? 'Enviando...' : 'Enviar Convite'}
             </Button>
           </div>
         </form>
@@ -77,9 +116,158 @@ function InviteModal({ onClose }: { onClose: () => void }) {
   )
 }
 
+// Modal: Gerenciar Departamentos do Usuário
+function DeptModal({ user, departments, userDepts, onClose, onSaved }: {
+  user: UserProfile
+  departments: Department[]
+  userDepts: UserDepartment[]
+  onClose: () => void
+  onSaved: (depts: UserDepartment[]) => void
+}) {
+  const supabase = createClient()
+  const [assignments, setAssignments] = useState<Record<string, 'gestor' | 'usuario' | null>>(
+    () => {
+      const map: Record<string, 'gestor' | 'usuario' | null> = {}
+      departments.forEach(d => { map[d.id] = null })
+      userDepts.forEach(ud => { map[ud.department_id] = ud.role })
+      return map
+    }
+  )
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
+  function toggle(deptId: string) {
+    setAssignments(prev => {
+      if (prev[deptId] === null) return { ...prev, [deptId]: 'usuario' }
+      if (prev[deptId] === 'usuario') return { ...prev, [deptId]: 'gestor' }
+      return { ...prev, [deptId]: null }
+    })
+  }
+
+  function setRole(deptId: string, role: 'gestor' | 'usuario') {
+    setAssignments(prev => ({ ...prev, [deptId]: role }))
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await (supabase as any).from('user_departments').delete().eq('user_id', user.id)
+      const toInsert = Object.entries(assignments)
+        .filter(([, role]) => role !== null)
+        .map(([deptId, role]) => ({ user_id: user.id, department_id: deptId, role }))
+      if (toInsert.length > 0) {
+        await (supabase as any).from('user_departments').insert(toInsert)
+      }
+      const newDepts: UserDepartment[] = toInsert.map(row => ({
+        id: '',
+        user_id: row.user_id,
+        department_id: row.department_id,
+        role: row.role as 'gestor' | 'usuario',
+        department: departments.find(d => d.id === row.department_id),
+      }))
+      onSaved(newDepts)
+      toast.success('Departamentos atualizados!')
+      onClose()
+    } catch {
+      toast.error('Erro ao salvar departamentos')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const selected = Object.values(assignments).filter(r => r !== null).length
+
+  return createPortal(
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.5)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div style={{ background: 'white', borderRadius: '20px', padding: '28px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 24px 48px rgba(0,0,0,0.2)' }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '16px', color: '#111827' }}>Departamentos de {user.full_name.split(' ')[0]}</div>
+            <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '2px' }}>Clique para selecionar • clique de novo para definir o papel</div>
+          </div>
+          <button onClick={onClose} style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#F9FAFB', cursor: 'pointer', fontSize: '18px', color: '#6B7280' }}>×</button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+          {departments.map((dept) => {
+            const role = assignments[dept.id]
+            const isSelected = role !== null
+            return (
+              <div key={dept.id} style={{
+                borderRadius: '12px', border: '2px solid', padding: '14px 16px',
+                borderColor: isSelected ? '#006494' : '#E5E7EB',
+                background: isSelected ? '#F0F7FC' : 'white',
+                transition: 'all 0.15s',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <button type="button" onClick={() => toggle(dept.id)} style={{
+                    width: '22px', height: '22px', borderRadius: '6px', flexShrink: 0, cursor: 'pointer',
+                    border: '2px solid', borderColor: isSelected ? '#006494' : '#D1D5DB',
+                    background: isSelected ? '#006494' : 'white',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {isSelected && <span style={{ color: 'white', fontSize: '13px', lineHeight: 1 }}>✓</span>}
+                  </button>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: '14px', color: '#111827' }}>{dept.name}</div>
+                    {dept.description && <div style={{ fontSize: '12px', color: '#9CA3AF' }}>{dept.description}</div>}
+                  </div>
+                  {isSelected && (
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button type="button" onClick={() => setRole(dept.id, 'usuario')}
+                        style={{
+                          padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                          border: '1.5px solid', borderColor: role === 'usuario' ? '#006494' : '#E5E7EB',
+                          background: role === 'usuario' ? '#006494' : 'white',
+                          color: role === 'usuario' ? 'white' : '#6B7280',
+                          display: 'flex', alignItems: 'center', gap: '4px',
+                        }}>
+                        <Shield style={{ width: '10px', height: '10px' }} />Usuário
+                      </button>
+                      <button type="button" onClick={() => setRole(dept.id, 'gestor')}
+                        style={{
+                          padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                          border: '1.5px solid', borderColor: role === 'gestor' ? '#E67E22' : '#E5E7EB',
+                          background: role === 'gestor' ? '#E67E22' : 'white',
+                          color: role === 'gestor' ? 'white' : '#6B7280',
+                          display: 'flex', alignItems: 'center', gap: '4px',
+                        }}>
+                        <Crown style={{ width: '10px', height: '10px' }} />Gestor
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <div style={{ background: '#FFF8E8', borderRadius: '10px', padding: '10px 14px', fontSize: '12px', color: '#92400E', marginBottom: '16px' }}>
+          <strong>Gestor</strong> vê todas as atividades do departamento. <strong>Usuário</strong> segue as permissões normais.
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-xl">Cancelar</Button>
+          <Button onClick={handleSave} disabled={saving} className="flex-1 rounded-xl gap-2" style={{ background: 'linear-gradient(135deg, #006494, #13293D)' }}>
+            <Layers className="h-4 w-4" />{saving ? 'Salvando...' : `Salvar (${selected} dept.)`}
+          </Button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  )
+}
+
 export default function UsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
+  const [userDepts, setUserDepts] = useState<Record<string, UserDepartment[]>>({})
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
@@ -87,6 +275,7 @@ export default function UsersPage() {
   const [filterRole, setFilterRole] = useState('all')
   const [filterDept, setFilterDept] = useState('all')
   const [inviteOpen, setInviteOpen] = useState(false)
+  const [deptModalUser, setDeptModalUser] = useState<UserProfile | null>(null)
   const [editingCargo, setEditingCargo] = useState<string | null>(null)
   const [cargoValue, setCargoValue] = useState('')
   const supabase = createClient()
@@ -98,12 +287,21 @@ export default function UsersPage() {
       const { data: p } = await supabase.from('user_profiles').select('*').eq('id', user.id).single()
       if (p) {
         setProfile(p as UserProfile)
-        const [{ data: us }, { data: deps }] = await Promise.all([
+        const [{ data: us }, { data: deps }, { data: uds }] = await Promise.all([
           supabase.from('user_profiles').select('*').eq('entity_id', p.entity_id ?? '').order('full_name'),
           supabase.from('departments').select('*').eq('entity_id', p.entity_id ?? '').order('name'),
+          (supabase as any).from('user_departments').select('*, department:departments(*)'),
         ])
         if (us) setUsers(us as UserProfile[])
         if (deps) setDepartments(deps as Department[])
+        if (uds) {
+          const map: Record<string, UserDepartment[]> = {}
+          for (const ud of uds as UserDepartment[]) {
+            if (!map[ud.user_id]) map[ud.user_id] = []
+            map[ud.user_id].push(ud)
+          }
+          setUserDepts(map)
+        }
       }
       setLoading(false)
     }
@@ -115,6 +313,7 @@ export default function UsersPage() {
     await supabase.from('user_profiles').update({ role: newRole }).eq('id', userId)
     setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, role: newRole } : u))
     setUpdatingId(null)
+    toast.success('Papel atualizado!')
   }
 
   async function saveCargo(userId: string) {
@@ -124,19 +323,12 @@ export default function UsersPage() {
     toast.success('Cargo atualizado!')
   }
 
-  async function updateDepartment(userId: string, deptId: string) {
-    const value = deptId === 'none' ? null : deptId
-    await (supabase as any).from('user_profiles').update({ department_id: value }).eq('id', userId)
-    setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, department_id: value } : u))
-    toast.success('Departamento atualizado!')
-  }
-
   const isAdmin = profile?.role === 'admin'
 
   const filtered = users.filter((u) => {
     const matchSearch = !search || u.full_name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()) || (u.cargo ?? '').toLowerCase().includes(search.toLowerCase())
     const matchRole = filterRole === 'all' || u.role === filterRole
-    const matchDept = filterDept === 'all' || (filterDept === 'none' ? !u.department_id : u.department_id === filterDept)
+    const matchDept = filterDept === 'all' || (userDepts[u.id] || []).some(ud => ud.department_id === filterDept)
     return matchSearch && matchRole && matchDept
   })
 
@@ -154,8 +346,8 @@ export default function UsersPage() {
           <p className="text-gray-500 text-sm mt-0.5">Gerencie os membros da sua equipe</p>
         </div>
         {isAdmin && (
-          <Button onClick={() => setInviteOpen(true)} className="bg-blue-700 hover:bg-blue-800 rounded-xl gap-2 shrink-0">
-            <Mail className="h-4 w-4" />Convidar por E-mail
+          <Button onClick={() => setInviteOpen(true)} className="rounded-xl gap-2 shrink-0" style={{ background: 'linear-gradient(135deg, #006494, #13293D)' }}>
+            <UserPlus className="h-4 w-4" />Cadastrar Usuário
           </Button>
         )}
       </div>
@@ -180,7 +372,6 @@ export default function UsersPage() {
             <SelectTrigger className="w-44 h-10 rounded-xl text-sm"><SelectValue placeholder="Departamento" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="none">Sem departamento</SelectItem>
               {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -192,80 +383,108 @@ export default function UsersPage() {
       </p>
 
       {loading ? (
-        <div className="space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-gray-100 rounded-xl animate-pulse" />)}</div>
+        <div className="space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-28 bg-gray-100 rounded-xl animate-pulse" />)}</div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-xl border p-12 text-center">
           <Users className="h-8 w-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">Nenhum usuário encontrado</p>
+          <p className="text-gray-500 mb-4">Nenhum usuário encontrado</p>
+          {isAdmin && <Button onClick={() => setInviteOpen(true)} variant="outline" className="rounded-xl gap-2"><UserPlus className="h-4 w-4" />Cadastrar primeiro usuário</Button>}
         </div>
       ) : (
         <div className="bg-white rounded-xl border divide-y">
           {filtered.map((user) => {
-            const dept = departments.find((d) => d.id === user.department_id)
+            const depts = userDepts[user.id] || []
             return (
-              <div key={user.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-4">
-                <Avatar className="h-10 w-10 shrink-0">
-                  {user.avatar_url && <AvatarImage src={user.avatar_url} />}
-                  <AvatarFallback className="bg-blue-100 text-blue-700 font-medium">{getInitials(user.full_name)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium text-gray-900">{user.full_name}</p>
-                    {user.id === profile?.id && <span className="text-xs text-gray-400">(você)</span>}
-                    <Badge className={`text-[10px] border ${roleColors[user.role]}`}>{ROLE_LABELS[user.role]}</Badge>
-                  </div>
-                  <p className="text-sm text-gray-500">{user.email}</p>
-                  <div className="flex flex-wrap items-center gap-3 mt-1">
-                    {editingCargo === user.id ? (
-                      <div className="flex items-center gap-1">
-                        <Input
-                          value={cargoValue}
-                          onChange={(e) => setCargoValue(e.target.value)}
-                          placeholder="Ex: Gerente, Pastor..."
-                          className="h-6 text-xs w-44 rounded-lg px-2"
-                          autoFocus
-                          onKeyDown={(e) => { if (e.key === 'Enter') saveCargo(user.id); if (e.key === 'Escape') setEditingCargo(null) }}
-                        />
-                        <button onClick={() => saveCargo(user.id)} className="text-xs text-blue-700 font-medium">Salvar</button>
-                        <button onClick={() => setEditingCargo(null)} className="text-xs text-gray-400">×</button>
+              <div key={user.id} className="p-4">
+                <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                  <Avatar className="h-10 w-10 shrink-0">
+                    {user.avatar_url && <AvatarImage src={user.avatar_url} />}
+                    <AvatarFallback className="bg-blue-100 text-blue-700 font-medium">{getInitials(user.full_name)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-gray-900">{user.full_name}</p>
+                      {user.id === profile?.id && <span className="text-xs text-gray-400">(você)</span>}
+                      <Badge className={`text-[10px] border ${roleColors[user.role]}`}>{ROLE_LABELS[user.role]}</Badge>
+                    </div>
+                    <p className="text-sm text-gray-500">{user.email}</p>
+                    <div className="flex flex-wrap items-center gap-3 mt-1">
+                      {editingCargo === user.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input value={cargoValue} onChange={(e) => setCargoValue(e.target.value)} placeholder="Ex: Pastor, Tesoureiro..."
+                            className="h-6 text-xs w-44 rounded-lg px-2" autoFocus
+                            onKeyDown={(e) => { if (e.key === 'Enter') saveCargo(user.id); if (e.key === 'Escape') setEditingCargo(null) }} />
+                          <button onClick={() => saveCargo(user.id)} className="text-xs text-blue-700 font-medium">Salvar</button>
+                          <button onClick={() => setEditingCargo(null)} className="text-xs text-gray-400">×</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => { setEditingCargo(user.id); setCargoValue(user.cargo || '') }}
+                          className="text-xs text-gray-400 hover:text-blue-700 transition-colors">
+                          {user.cargo ? `💼 ${user.cargo}` : '+ Cargo'}
+                        </button>
+                      )}
+                      <span className="text-xs text-gray-300">Desde {formatDate(user.created_at)}</span>
+                    </div>
+
+                    {/* Departamentos do usuário */}
+                    {depts.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {depts.map((ud) => (
+                          <span key={ud.department_id} style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '4px',
+                            padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 600,
+                            background: ud.role === 'gestor' ? '#FEF3C7' : '#E8F4FD',
+                            color: ud.role === 'gestor' ? '#92400E' : '#1E5478',
+                            border: `1px solid ${ud.role === 'gestor' ? '#FDE68A' : '#BAD8EE'}`,
+                          }}>
+                            {ud.role === 'gestor' ? <Crown style={{ width: '10px', height: '10px' }} /> : <Shield style={{ width: '10px', height: '10px' }} />}
+                            {(ud.department as Department | undefined)?.name || 'Dept.'}
+                          </span>
+                        ))}
                       </div>
-                    ) : (
-                      <button onClick={() => { setEditingCargo(user.id); setCargoValue(user.cargo || '') }} className="text-xs text-gray-400 hover:text-blue-700 transition-colors">
-                        {user.cargo ? `💼 ${user.cargo}` : '+ Adicionar cargo'}
-                      </button>
                     )}
-                    {dept && <span className="text-xs flex items-center gap-1 text-gray-500"><Building2 className="h-3 w-3" />{dept.name}</span>}
-                    <span className="text-xs text-gray-300">Desde {formatDate(user.created_at)}</span>
+                    {depts.length === 0 && (
+                      <div className="mt-1.5">
+                        <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">Sem departamento</span>
+                      </div>
+                    )}
                   </div>
+
+                  {isAdmin && (
+                    <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                      {user.id !== profile?.id && (
+                        <Select value={user.role} onValueChange={(v) => updateRole(user.id, v as 'admin' | 'editor' | 'visualizador')} disabled={updatingId === user.id}>
+                          <SelectTrigger className="h-8 w-36 text-xs rounded-lg"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">Administrador</SelectItem>
+                            <SelectItem value="editor">Editor</SelectItem>
+                            <SelectItem value="visualizador">Visualizador</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                      <Button variant="outline" size="sm" className="h-8 rounded-lg text-xs gap-1.5 border-purple-200 text-purple-700 hover:bg-purple-50"
+                        onClick={() => setDeptModalUser(user)}>
+                        <Building2 className="h-3.5 w-3.5" />Departamentos
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                {isAdmin && user.id !== profile?.id && (
-                  <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-                    <Select value={user.role} onValueChange={(v) => updateRole(user.id, v as 'admin' | 'editor' | 'visualizador')} disabled={updatingId === user.id}>
-                      <SelectTrigger className="h-8 w-36 text-xs rounded-lg"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">Administrador</SelectItem>
-                        <SelectItem value="editor">Editor</SelectItem>
-                        <SelectItem value="visualizador">Visualizador</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {departments.length > 0 && (
-                      <Select value={user.department_id || 'none'} onValueChange={(v) => updateDepartment(user.id, v)}>
-                        <SelectTrigger className="h-8 w-44 text-xs rounded-lg"><SelectValue placeholder="Departamento" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Sem departamento</SelectItem>
-                          {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
-                )}
               </div>
             )
           })}
         </div>
       )}
 
-      {inviteOpen && <InviteModal onClose={() => setInviteOpen(false)} />}
+      {inviteOpen && profile && <InviteModal onClose={() => setInviteOpen(false)} entityId={profile.entity_id || ''} />}
+      {deptModalUser && (
+        <DeptModal
+          user={deptModalUser}
+          departments={departments}
+          userDepts={userDepts[deptModalUser.id] || []}
+          onClose={() => setDeptModalUser(null)}
+          onSaved={(newDepts) => setUserDepts(prev => ({ ...prev, [deptModalUser.id]: newDepts }))}
+        />
+      )}
     </div>
   )
 }

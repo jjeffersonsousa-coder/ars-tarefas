@@ -24,7 +24,7 @@ const navItems = [
   { href: '/activities',  label: 'Atividades',    icon: ListTodo,        color: '#1ABC9C' },
   { href: '/calendar',    label: 'Calendário',    icon: CalendarDays,    color: '#2ECC71' },
   { href: '/departments', label: 'Departamentos', icon: Layers,          color: '#9B59B6' },
-  { href: '/entities',    label: 'Entidades',     icon: Building2,       color: '#E67E22' },
+  { href: '/entities',    label: 'Empresas',     icon: Building2,       color: '#E67E22' },
   { href: '/users',       label: 'Usuários',      icon: Users2,          color: '#E74C3C' },
   { href: '/tags',        label: 'Etiquetas',     icon: Tag,             color: '#F1C40F' },
   { href: '/settings',    label: 'Configurações', icon: Settings2,       color: '#95A5A6' },

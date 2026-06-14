@@ -19,7 +19,7 @@ const navItems = [
   { href: '/activities',   label: 'Atividades',    icon: ListTodo,        color: '#1ABC9C', bg: 'rgba(26,188,156,0.18)' },
   { href: '/calendar',     label: 'Calendário',    icon: CalendarDays,    color: '#2ECC71', bg: 'rgba(46,204,113,0.18)' },
   { href: '/departments',  label: 'Departamentos', icon: Layers,          color: '#9B59B6', bg: 'rgba(155,89,182,0.18)' },
-  { href: '/entities',     label: 'Entidades',     icon: Building2,       color: '#E67E22', bg: 'rgba(230,126,34,0.18)'  },
+  { href: '/entities',     label: 'Empresas',     icon: Building2,       color: '#E67E22', bg: 'rgba(230,126,34,0.18)'  },
   { href: '/users',        label: 'Usuários',      icon: Users2,          color: '#E74C3C', bg: 'rgba(231,76,60,0.18)'  },
   { href: '/tags',         label: 'Etiquetas',     icon: Tag,             color: '#F1C40F', bg: 'rgba(241,196,15,0.18)' },
   { href: '/settings',     label: 'Configurações', icon: Settings2,       color: '#95A5A6', bg: 'rgba(149,165,166,0.18)' },
