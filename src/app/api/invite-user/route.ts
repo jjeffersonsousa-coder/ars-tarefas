@@ -25,14 +25,20 @@ export async function POST(req: NextRequest) {
   const { data: profile } = await adminClient
     .from('user_profiles').select('role, entity_id').eq('id', user.id).single()
 
-  if (profile?.role !== 'admin') {
+  const isSuperAdmin = profile?.role === 'super_admin'
+  const isAdmin = profile?.role === 'admin'
+
+  if (!isSuperAdmin && !isAdmin) {
     return NextResponse.json({ error: 'Apenas administradores podem convidar usuários' }, { status: 403 })
   }
 
-  const { email, full_name, cargo, role } = await req.json()
+  const { email, full_name, cargo, role, entity_id: bodyEntityId } = await req.json()
   if (!email || !full_name) {
     return NextResponse.json({ error: 'E-mail e nome são obrigatórios' }, { status: 400 })
   }
+
+  // super_admin pode especificar entity_id diretamente (ex: ao criar empresa + admin)
+  const targetEntityId = isSuperAdmin && bodyEntityId ? bodyEntityId : profile?.entity_id
 
   const { data: invited, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
     data: { full_name },
@@ -50,7 +56,7 @@ export async function POST(req: NextRequest) {
       full_name,
       cargo: cargo || null,
       role: role || 'editor',
-      entity_id: profile.entity_id,
+      entity_id: targetEntityId,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'id' })
   }

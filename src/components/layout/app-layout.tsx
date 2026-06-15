@@ -41,6 +41,7 @@ export function AppLayout({ children, user }: AppLayoutProps) {
       <Sidebar
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(v => !v)}
+        userRole={user.role}
       />
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         <Header

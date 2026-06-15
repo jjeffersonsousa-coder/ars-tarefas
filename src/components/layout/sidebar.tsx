@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, ListTodo, Building2, Users2, Tag,
   Settings2, LogOut, Menu, X, Zap, CalendarDays,
-  ChevronLeft, ChevronRight, Layers,
+  ChevronLeft, ChevronRight, Layers, ShieldAlert,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
@@ -32,9 +32,10 @@ const SIDEBAR_BORDER = 'rgba(255,255,255,0.08)'
 interface SidebarProps {
   collapsed?: boolean
   onToggleCollapse?: () => void
+  userRole?: string
 }
 
-export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
+export function Sidebar({ collapsed = false, onToggleCollapse, userRole }: SidebarProps) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
   const supabase = createClient()
@@ -132,6 +133,38 @@ export function Sidebar({ collapsed = false, onToggleCollapse }: SidebarProps) {
           )
         })}
       </nav>
+
+      {/* Super Admin link */}
+      {userRole === 'super_admin' && (
+        <div style={{ padding: collapsed ? '4px 8px' : '4px 10px' }}>
+          {!collapsed && (
+            <p style={{ color: '#4A7890', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, padding: '0 10px', marginBottom: '6px' }}>Sistema</p>
+          )}
+          {(() => {
+            const isActive = pathname === '/admin' || pathname.startsWith('/admin/')
+            return (
+              <Link href="/admin" onClick={() => setMobileOpen(false)} title={collapsed ? 'Super Admin' : undefined}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: collapsed ? '10px' : '9px 12px',
+                  borderRadius: '10px', textDecoration: 'none', fontSize: '13px', fontWeight: 500,
+                  justifyContent: collapsed ? 'center' : 'flex-start',
+                  background: isActive ? 'rgba(155,89,182,0.18)' : 'transparent',
+                  color: isActive ? '#9B59B6' : 'rgba(255,255,255,0.45)',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={(e) => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.8)' } }}
+                onMouseLeave={(e) => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.45)' } }}
+              >
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? '#9B59B6' : 'transparent', transition: 'all 0.15s' }}>
+                  <ShieldAlert style={{ width: '15px', height: '15px', color: isActive ? 'white' : '#9B59B6' }} />
+                </div>
+                {!collapsed && 'Super Admin'}
+              </Link>
+            )
+          })()}
+        </div>
+      )}
 
       {/* Sign out */}
       <div style={{ borderTop: `1px solid ${SIDEBAR_BORDER}`, padding: collapsed ? '8px' : '12px' }}>

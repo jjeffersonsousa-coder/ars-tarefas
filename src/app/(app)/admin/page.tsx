@@ -6,15 +6,19 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Building2, Users, Plus, Loader2, ShieldAlert } from 'lucide-react'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Building2, Users, Plus, Loader2, ShieldAlert, Mail, ChevronDown, ChevronRight, Crown, Check } from 'lucide-react'
 import { toast } from 'sonner'
+import { getInitials } from '@/lib/utils'
+import { ROLE_LABELS, ROLE_COLORS, UserRole } from '@/lib/types'
 
 interface Entity {
   id: string
   name: string
   type: string
+  document?: string | null
+  email?: string | null
   created_at: string
 }
 
@@ -22,25 +26,34 @@ interface UserProfile {
   id: string
   full_name: string
   email: string
-  role: string
+  role: UserRole
   entity_id: string | null
-  entities?: { name: string; type: string }
 }
 
-const SUPER_ADMIN_EMAIL = 'jjeffersonsousa@gmail.com'
+type Step = 'empresa' | 'admin' | 'done'
 
 export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [authorized, setAuthorized] = useState(false)
   const [entities, setEntities] = useState<Entity[]>([])
   const [users, setUsers] = useState<UserProfile[]>([])
-  const [creating, setCreating] = useState(false)
+  const [expandedEntity, setExpandedEntity] = useState<string | null>(null)
 
-  // Form state
+  // Wizard state
+  const [step, setStep] = useState<Step>('empresa')
+  const [saving, setSaving] = useState(false)
+  const [createdEntity, setCreatedEntity] = useState<Entity | null>(null)
+
+  // Empresa fields
   const [entityName, setEntityName] = useState('')
   const [entityType, setEntityType] = useState<'empresa' | 'familia'>('empresa')
   const [entityDocument, setEntityDocument] = useState('')
-  const [masterUserId, setMasterUserId] = useState('')
+  const [entityEmail, setEntityEmail] = useState('')
+
+  // Admin fields
+  const [adminName, setAdminName] = useState('')
+  const [adminEmail, setAdminEmail] = useState('')
+  const [adminCargo, setAdminCargo] = useState('')
 
   const supabase = createClient()
   const router = useRouter()
@@ -48,10 +61,9 @@ export default function AdminPage() {
   useEffect(() => {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user || user.email !== SUPER_ADMIN_EMAIL) {
-        router.replace('/dashboard')
-        return
-      }
+      if (!user) { router.replace('/dashboard'); return }
+      const { data: p } = await supabase.from('user_profiles').select('role').eq('id', user.id).single()
+      if (!p || p.role !== 'super_admin') { router.replace('/dashboard'); return }
       setAuthorized(true)
       await loadData()
       setLoading(false)
@@ -60,143 +72,283 @@ export default function AdminPage() {
   }, [])
 
   async function loadData() {
-    const [{ data: entitiesData }, { data: usersData }] = await Promise.all([
+    const [{ data: ents }, { data: us }] = await Promise.all([
       supabase.from('entities').select('*').order('created_at', { ascending: false }),
-      supabase.from('user_profiles').select('*, entities(name, type)').order('full_name'),
+      supabase.from('user_profiles').select('id, full_name, email, role, entity_id').order('full_name'),
     ])
-    if (entitiesData) setEntities(entitiesData.filter(e => e.type !== 'pessoa_fisica'))
-    if (usersData) setUsers(usersData as UserProfile[])
+    if (ents) setEntities(ents.filter((e: Entity) => e.type !== 'pessoa_fisica'))
+    if (us) setUsers(us as UserProfile[])
   }
 
-  async function handleCreateEntity(e: React.FormEvent) {
+  async function handleCreateEmpresa(e: React.FormEvent) {
     e.preventDefault()
-    if (!masterUserId) { toast.error('Selecione um usuário master'); return }
-    setCreating(true)
-
-    // Cria a entidade
-    const { data: entity, error: entityError } = await supabase
-      .from('entities')
-      .insert({ name: entityName, type: entityType, document: entityDocument || null })
-      .select().single()
-
-    if (entityError) { toast.error('Erro ao criar entidade: ' + entityError.message); setCreating(false); return }
-
-    // Atualiza o usuário master para apontar para essa entidade
-    const { error: profileError } = await supabase
-      .from('user_profiles')
-      .update({ entity_id: entity.id, role: 'admin' })
-      .eq('id', masterUserId)
-
-    if (profileError) { toast.error('Erro ao vincular usuário: ' + profileError.message); setCreating(false); return }
-
-    toast.success(`"${entityName}" criada e vinculada a ${users.find(u => u.id === masterUserId)?.full_name}!`)
-    setEntityName(''); setEntityDocument(''); setMasterUserId('')
-    await loadData()
-    setCreating(false)
+    if (!entityName.trim()) return
+    setSaving(true)
+    const { data: entity, error } = await supabase.from('entities').insert({
+      name: entityName.trim(),
+      type: entityType,
+      document: entityDocument || null,
+      email: entityEmail || null,
+      updated_at: new Date().toISOString(),
+    }).select().single()
+    if (error) { toast.error('Erro ao criar empresa: ' + error.message); setSaving(false); return }
+    setCreatedEntity(entity as Entity)
+    setStep('admin')
+    setSaving(false)
   }
 
-  async function handleAssignUser(userId: string, entityId: string, role: 'admin' | 'editor' | 'visualizador') {
-    const { error } = await supabase.from('user_profiles').update({ entity_id: entityId, role }).eq('id', userId)
-    if (error) { toast.error('Erro: ' + error.message); return }
-    toast.success('Usuário atualizado!')
-    await loadData()
+  async function handleInviteAdmin(e: React.FormEvent) {
+    e.preventDefault()
+    if (!adminEmail.trim() || !adminName.trim() || !createdEntity) return
+    setSaving(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/invite-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({
+          email: adminEmail.trim(),
+          full_name: adminName.trim(),
+          cargo: adminCargo.trim() || null,
+          role: 'admin',
+          entity_id: createdEntity.id,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erro ao convidar')
+      toast.success('Empresa criada e convite enviado!', {
+        description: `${adminName} receberá um e-mail para acessar "${createdEntity.name}".`,
+      })
+      // reset
+      setStep('done')
+      await loadData()
+    } catch (err: unknown) {
+      toast.error('Erro ao enviar convite', { description: err instanceof Error ? err.message : 'Tente novamente' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function resetWizard() {
+    setStep('empresa')
+    setCreatedEntity(null)
+    setEntityName(''); setEntityType('empresa'); setEntityDocument(''); setEntityEmail('')
+    setAdminName(''); setAdminEmail(''); setAdminCargo('')
   }
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
-      <Loader2 className="h-8 w-8 animate-spin text-blue-700" />
+      <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#006494' }} />
     </div>
   )
-
   if (!authorized) return null
 
-  const unlinkedUsers = users.filter(u => !u.entity_id || users.find(u2 => u2.id === u.id)?.entities === null)
+  const STEP_INFO: Record<Step, { label: string; num: number }> = {
+    empresa: { label: 'Dados da Empresa', num: 1 },
+    admin: { label: 'Convidar Administrador', num: 2 },
+    done: { label: 'Concluído', num: 3 },
+  }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto space-y-8">
+      {/* Header */}
       <div className="flex items-center gap-3">
-        <ShieldAlert className="h-7 w-7 text-blue-700" />
+        <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #006494, #13293D)' }}>
+          <ShieldAlert className="h-5 w-5 text-white" />
+        </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Painel do Super Admin</h1>
-          <p className="text-sm text-gray-500">Gerencie empresas, grupos familiares e usuários</p>
+          <h1 className="text-2xl font-bold text-gray-900">Painel Super Admin</h1>
+          <p className="text-sm text-gray-500">Provisione empresas e seus administradores</p>
         </div>
       </div>
 
-      {/* Criar nova entidade */}
-      <div className="bg-white rounded-2xl border p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Plus className="h-5 w-5 text-blue-700" /> Criar Empresa ou Grupo Familiar
-        </h2>
-        <form onSubmit={handleCreateEntity} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label>Nome *</Label>
-            <Input value={entityName} onChange={e => setEntityName(e.target.value)} placeholder="Nome da empresa/família" required className="mt-1" />
-          </div>
-          <div>
-            <Label>Tipo *</Label>
-            <Select value={entityType} onValueChange={v => setEntityType(v as 'empresa' | 'familia')}>
-              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="empresa">Empresa</SelectItem>
-                <SelectItem value="familia">Grupo Familiar</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>CNPJ/Documento (opcional)</Label>
-            <Input value={entityDocument} onChange={e => setEntityDocument(e.target.value)} placeholder="Número do documento" className="mt-1" />
-          </div>
-          <div>
-            <Label>Usuário Master *</Label>
-            <Select value={masterUserId} onValueChange={setMasterUserId}>
-              <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione um usuário" /></SelectTrigger>
-              <SelectContent>
-                {users.map(u => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.full_name} ({u.email})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="md:col-span-2">
-            <Button type="submit" disabled={creating} className="w-full md:w-auto">
-              {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Criar e Vincular Usuário Master
-            </Button>
-          </div>
-        </form>
+      {/* Wizard: Criar Empresa */}
+      <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b flex items-center gap-3" style={{ background: 'linear-gradient(135deg, #F0F7FC, #E8F1F2)' }}>
+          <Plus className="h-5 w-5" style={{ color: '#006494' }} />
+          <h2 className="font-semibold text-gray-900">Criar Nova Empresa</h2>
+        </div>
+
+        {/* Steps indicator */}
+        <div className="flex items-center gap-0 px-6 pt-5 pb-2">
+          {(['empresa', 'admin', 'done'] as Step[]).map((s, i) => (
+            <div key={s} className="flex items-center gap-0">
+              <div className="flex items-center gap-2">
+                <div className="h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold transition-all"
+                  style={{
+                    background: step === s ? '#006494' : (STEP_INFO[s].num < STEP_INFO[step].num || step === 'done') ? '#16A34A' : '#E5E7EB',
+                    color: step === s || STEP_INFO[s].num < STEP_INFO[step].num || step === 'done' ? 'white' : '#6B7280',
+                  }}>
+                  {(STEP_INFO[s].num < STEP_INFO[step].num || step === 'done') && s !== step
+                    ? <Check className="h-3.5 w-3.5" />
+                    : STEP_INFO[s].num}
+                </div>
+                <span className="text-xs font-medium" style={{ color: step === s ? '#006494' : '#9CA3AF' }}>
+                  {STEP_INFO[s].label}
+                </span>
+              </div>
+              {i < 2 && <div className="w-8 h-px mx-2" style={{ background: '#E5E7EB' }} />}
+            </div>
+          ))}
+        </div>
+
+        <div className="px-6 pb-6 pt-4">
+          {step === 'empresa' && (
+            <form onSubmit={handleCreateEmpresa} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Nome da Empresa *</Label>
+                  <Input value={entityName} onChange={e => setEntityName(e.target.value)}
+                    placeholder="Ex: Igreja Adventista Central" required className="mt-1.5 h-11 rounded-xl" autoFocus />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Tipo *</Label>
+                  <select value={entityType} onChange={e => setEntityType(e.target.value as 'empresa' | 'familia')}
+                    className="mt-1.5 w-full h-11 rounded-xl border border-gray-200 px-3 text-sm bg-white text-gray-900">
+                    <option value="empresa">Empresa / Organização</option>
+                    <option value="familia">Grupo Familiar</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">CNPJ / Documento</Label>
+                  <Input value={entityDocument} onChange={e => setEntityDocument(e.target.value)}
+                    placeholder="Opcional" className="mt-1.5 h-11 rounded-xl" />
+                </div>
+                <div className="md:col-span-2">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">E-mail da empresa</Label>
+                  <Input type="email" value={entityEmail} onChange={e => setEntityEmail(e.target.value)}
+                    placeholder="contato@empresa.com (opcional)" className="mt-1.5 h-11 rounded-xl" />
+                </div>
+              </div>
+              <div className="flex justify-end pt-2">
+                <Button type="submit" disabled={saving || !entityName.trim()} className="rounded-xl gap-2 px-6"
+                  style={{ background: 'linear-gradient(135deg, #006494, #13293D)' }}>
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <ChevronRight className="h-4 w-4" />}
+                  Criar Empresa e Continuar
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {step === 'admin' && createdEntity && (
+            <form onSubmit={handleInviteAdmin} className="space-y-4">
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-green-200 bg-green-50 mb-2">
+                <Check className="h-5 w-5 text-green-600 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-green-800">"{createdEntity.name}" criada com sucesso!</p>
+                  <p className="text-xs text-green-600">Agora convide o administrador responsável por esta empresa.</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Nome completo *</Label>
+                  <Input value={adminName} onChange={e => setAdminName(e.target.value)}
+                    placeholder="Nome do administrador" required className="mt-1.5 h-11 rounded-xl" autoFocus />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">E-mail *</Label>
+                  <Input type="email" value={adminEmail} onChange={e => setAdminEmail(e.target.value)}
+                    placeholder="admin@empresa.com" required className="mt-1.5 h-11 rounded-xl" />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Cargo / Função</Label>
+                  <Input value={adminCargo} onChange={e => setAdminCargo(e.target.value)}
+                    placeholder="Ex: Diretor, Pastor..." className="mt-1.5 h-11 rounded-xl" />
+                </div>
+              </div>
+              <div className="p-3 rounded-xl border border-blue-100 bg-blue-50 text-xs text-blue-700 leading-relaxed">
+                <strong>Papel: Administrador</strong> — este usuário poderá gerenciar departamentos, convidar membros e ver todas as atividades da empresa.
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                <button type="button" onClick={() => setStep('empresa')} className="text-sm text-gray-500 hover:text-gray-700 underline">
+                  ← Voltar
+                </button>
+                <Button type="submit" disabled={saving || !adminName.trim() || !adminEmail.trim()} className="rounded-xl gap-2 px-6"
+                  style={{ background: 'linear-gradient(135deg, #006494, #13293D)' }}>
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  Enviar Convite
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {step === 'done' && createdEntity && (
+            <div className="text-center py-6">
+              <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                <Check className="h-8 w-8 text-green-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">Tudo pronto!</h3>
+              <p className="text-sm text-gray-500 mb-1">A empresa <strong>"{createdEntity.name}"</strong> foi criada.</p>
+              <p className="text-sm text-gray-500 mb-6">O administrador receberá um e-mail para definir a senha e acessar o sistema.</p>
+              <Button onClick={resetWizard} variant="outline" className="rounded-xl gap-2">
+                <Plus className="h-4 w-4" />Criar outra empresa
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Lista de entidades */}
-      <div className="bg-white rounded-2xl border p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Building2 className="h-5 w-5 text-blue-700" /> Empresas e Grupos ({entities.length})
-        </h2>
+      {/* Lista de empresas */}
+      <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b flex items-center gap-3" style={{ background: 'linear-gradient(135deg, #F0F7FC, #E8F1F2)' }}>
+          <Building2 className="h-5 w-5" style={{ color: '#006494' }} />
+          <h2 className="font-semibold text-gray-900">Empresas Cadastradas</h2>
+          <span className="ml-auto text-xs text-gray-400 bg-white/80 px-2.5 py-0.5 rounded-full border">{entities.length}</span>
+        </div>
         {entities.length === 0 ? (
-          <p className="text-sm text-gray-500">Nenhuma empresa/grupo criado ainda.</p>
+          <p className="text-sm text-gray-400 p-6">Nenhuma empresa cadastrada ainda.</p>
         ) : (
-          <div className="space-y-3">
+          <div className="divide-y">
             {entities.map(entity => {
               const members = users.filter(u => u.entity_id === entity.id)
+              const admins = members.filter(u => u.role === 'admin' || u.role === 'super_admin')
+              const isExpanded = expandedEntity === entity.id
               return (
-                <div key={entity.id} className="border rounded-xl p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-gray-900">{entity.name}</p>
-                      <Badge variant="outline" className="text-xs mt-1">
-                        {entity.type === 'empresa' ? 'Empresa' : 'Grupo Familiar'}
-                      </Badge>
+                <div key={entity.id}>
+                  <button
+                    onClick={() => setExpandedEntity(isExpanded ? null : entity.id)}
+                    className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
+                      <Building2 className="h-5 w-5 text-indigo-600" />
                     </div>
-                    <span className="text-sm text-gray-500">{members.length} membro(s)</span>
-                  </div>
-                  {members.length > 0 && (
-                    <div className="mt-3 space-y-1">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900">{entity.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs text-gray-400">{entity.type === 'empresa' ? 'Empresa' : 'Grupo Familiar'}</span>
+                        {entity.document && <span className="text-xs text-gray-300">• {entity.document}</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-xs text-gray-400 flex items-center gap-1">
+                        <Users className="h-3.5 w-3.5" />{members.length}
+                      </span>
+                      {admins.length > 0 && (
+                        <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                          <Crown className="h-3 w-3" />{admins[0].full_name.split(' ')[0]}
+                        </span>
+                      )}
+                      {admins.length === 0 && (
+                        <span className="text-xs text-red-500 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">Sem admin</span>
+                      )}
+                      {isExpanded ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
+                    </div>
+                  </button>
+                  {isExpanded && members.length > 0 && (
+                    <div className="bg-gray-50 border-t px-5 py-3 space-y-2">
                       {members.map(m => (
-                        <div key={m.id} className="flex items-center justify-between text-sm">
-                          <span className="text-gray-700">{m.full_name} <span className="text-gray-400">({m.email})</span></span>
-                          <Badge className={m.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}>
-                            {m.role === 'admin' ? 'Master' : m.role}
+                        <div key={m.id} className="flex items-center gap-3 py-1">
+                          <Avatar className="h-7 w-7 shrink-0">
+                            <AvatarFallback className="text-[10px] font-bold bg-blue-100 text-blue-700">
+                              {getInitials(m.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">{m.full_name}</p>
+                            <p className="text-xs text-gray-400 truncate">{m.email}</p>
+                          </div>
+                          <Badge className={`text-[10px] border ${ROLE_COLORS[m.role]}`}>
+                            {ROLE_LABELS[m.role]}
                           </Badge>
                         </div>
                       ))}
@@ -207,27 +359,6 @@ export default function AdminPage() {
             })}
           </div>
         )}
-      </div>
-
-      {/* Todos os usuários */}
-      <div className="bg-white rounded-2xl border p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Users className="h-5 w-5 text-blue-700" /> Todos os Usuários ({users.length})
-        </h2>
-        <div className="space-y-2">
-          {users.map(u => (
-            <div key={u.id} className="flex items-center justify-between border rounded-xl px-4 py-3">
-              <div>
-                <p className="font-medium text-gray-900 text-sm">{u.full_name}</p>
-                <p className="text-xs text-gray-500">{u.email}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-500">{(u as any).entities?.name ?? 'Sem empresa'}</p>
-                <Badge variant="outline" className="text-xs">{u.role}</Badge>
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   )
