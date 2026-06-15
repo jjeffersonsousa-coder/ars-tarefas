@@ -553,6 +553,32 @@ export default function UsersPage() {
                         onClick={() => setDeptModalUser(user)}>
                         <Building2 className="h-3.5 w-3.5" />Departamentos
                       </Button>
+                      {user.id !== profile?.id && (
+                        <Button variant="outline" size="sm"
+                          disabled={resendingId === user.id}
+                          onClick={async () => {
+                            setResendingId(user.id)
+                            try {
+                              const { data: { session } } = await supabase.auth.getSession()
+                              const res = await fetch('/api/resend-invite', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+                                body: JSON.stringify({ email: user.email, full_name: user.full_name }),
+                              })
+                              const data = await res.json()
+                              if (!res.ok) throw new Error(data.error)
+                              toast.success('Convite reenviado!', { description: `E-mail enviado para ${user.email}` })
+                            } catch (err: unknown) {
+                              toast.error('Erro ao reenviar', { description: err instanceof Error ? err.message : 'Tente novamente' })
+                            } finally {
+                              setResendingId(null)
+                            }
+                          }}
+                          className="h-8 rounded-lg text-xs gap-1.5 border-amber-200 text-amber-700 hover:bg-amber-50">
+                          {resendingId === user.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                          Reenviar convite
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
