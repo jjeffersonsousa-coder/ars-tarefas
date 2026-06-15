@@ -25,12 +25,15 @@ export async function POST(req: NextRequest) {
   const { email, full_name } = await req.json()
   if (!email) return NextResponse.json({ error: 'E-mail obrigatório' }, { status: 400 })
 
-  const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || req.headers.get('origin')}/auth/callback`
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || req.headers.get('origin')
+  const inviteRedirect = `${origin}/auth/callback`
+  // Reset password goes directly to /set-password (hash params are client-side only)
+  const resetRedirect = `${origin}/set-password`
 
   // Try invite first; if user already exists, fall back to password reset
   const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
     data: { full_name },
-    redirectTo,
+    redirectTo: inviteRedirect,
   })
 
   if (inviteError) {
@@ -40,8 +43,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: inviteError.message }, { status: 400 })
     }
 
-    // User exists but hasn't set password — send password reset link instead
-    const { error: resetError } = await adminClient.auth.resetPasswordForEmail(email, { redirectTo })
+    // User exists — send password reset link directly to /set-password
+    const { error: resetError } = await adminClient.auth.resetPasswordForEmail(email, {
+      redirectTo: resetRedirect,
+    })
     if (resetError) return NextResponse.json({ error: resetError.message }, { status: 400 })
   }
 

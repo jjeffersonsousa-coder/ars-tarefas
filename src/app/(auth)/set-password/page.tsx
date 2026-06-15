@@ -19,16 +19,39 @@ function SetPasswordForm() {
   const [confirm, setConfirm] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
 
-  // Verify the user is authenticated (invite token was already verified by callback)
   useEffect(() => {
+    // Handle invite flow: user already authenticated via /auth/callback
     supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.replace('/login?error=session_expired')
-      } else if (!emailParam && data.user.email) {
-        setEmail(data.user.email)
+      if (data.user) {
+        if (!emailParam && data.user.email) setEmail(data.user.email)
+        setReady(true)
+        return
+      }
+
+      // Handle password-reset flow: Supabase sends hash params (#access_token=...)
+      // onAuthStateChange fires PASSWORD_RECOVERY when the hash is consumed
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+          if (session?.user) {
+            if (!emailParam && session.user.email) setEmail(session.user.email)
+            setReady(true)
+          }
+        }
+      })
+
+      // Give the hash a moment to be processed, then redirect if still not authed
+      const timeout = setTimeout(async () => {
+        const { data: check } = await supabase.auth.getUser()
+        if (!check.user) router.replace('/login?error=link_expirado')
+      }, 3000)
+
+      return () => {
+        subscription.unsubscribe()
+        clearTimeout(timeout)
       }
     })
   }, [])
@@ -70,7 +93,12 @@ function SetPasswordForm() {
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-2xl">
-          {done ? (
+          {!ready && !done ? (
+            <div className="text-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-3" style={{ color: '#006494' }} />
+              <p className="text-sm text-gray-500">Validando seu link de acesso...</p>
+            </div>
+          ) : done ? (
             <div className="text-center py-4">
               <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-3" />
               <h2 className="text-lg font-bold text-gray-900 mb-1">Senha definida!</h2>
@@ -78,7 +106,7 @@ function SetPasswordForm() {
             </div>
           ) : (
             <>
-              <h2 className="text-lg font-bold text-gray-900 mb-1">Definir sua senha</h2>
+              <h2 className="text-lg font-bold text-gray-900 mb-1">Criar sua senha</h2>
               <p className="text-sm text-gray-500 mb-5">Escolha uma senha segura para acessar o sistema.</p>
 
               {error && (
