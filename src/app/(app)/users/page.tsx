@@ -345,7 +345,7 @@ export default function UsersPage() {
           }
           setUserDepts(map)
         }
-        if (p.role === 'admin' || p.role === 'super_admin') {
+        if ((p as UserProfile).role === 'admin' || (p as UserProfile).role === 'super_admin') {
           const { data: { session } } = await supabase.auth.getSession()
           if (session) loadPendingInvites(session)
         }

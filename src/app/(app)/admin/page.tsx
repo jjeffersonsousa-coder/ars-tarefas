@@ -62,8 +62,8 @@ export default function AdminPage() {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.replace('/dashboard'); return }
-      const { data: p } = await supabase.from('user_profiles').select('role').eq('id', user.id).single()
-      if (!p || p.role !== 'super_admin') { router.replace('/dashboard'); return }
+      const { data: p } = await (supabase as any).from('user_profiles').select('role').eq('id', user.id).single()
+      if (!p || (p as { role: string }).role !== 'super_admin') { router.replace('/dashboard'); return }
       setAuthorized(true)
       await loadData()
       setLoading(false)
@@ -235,7 +235,7 @@ export default function AdminPage() {
               <div className="flex items-center gap-3 p-3 rounded-xl border border-green-200 bg-green-50 mb-2">
                 <Check className="h-5 w-5 text-green-600 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-green-800">"{createdEntity.name}" criada com sucesso!</p>
+                  <p className="text-sm font-semibold text-green-800">&ldquo;{createdEntity.name}&rdquo; criada com sucesso!</p>
                   <p className="text-xs text-green-600">Agora convide o administrador responsável por esta empresa.</p>
                 </div>
               </div>
@@ -278,7 +278,7 @@ export default function AdminPage() {
                 <Check className="h-8 w-8 text-green-600" />
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-1">Tudo pronto!</h3>
-              <p className="text-sm text-gray-500 mb-1">A empresa <strong>"{createdEntity.name}"</strong> foi criada.</p>
+              <p className="text-sm text-gray-500 mb-1">A empresa <strong>&ldquo;{createdEntity.name}&rdquo;</strong> foi criada.</p>
               <p className="text-sm text-gray-500 mb-6">O administrador receberá um e-mail para definir a senha e acessar o sistema.</p>
               <Button onClick={resetWizard} variant="outline" className="rounded-xl gap-2">
                 <Plus className="h-4 w-4" />Criar outra empresa
