@@ -25,11 +25,25 @@ export async function POST(req: NextRequest) {
   const { email, full_name } = await req.json()
   if (!email) return NextResponse.json({ error: 'E-mail obrigatório' }, { status: 400 })
 
-  const { error } = await adminClient.auth.admin.inviteUserByEmail(email, {
+  const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || req.headers.get('origin')}/auth/callback`
+
+  // Try invite first; if user already exists, fall back to password reset
+  const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
     data: { full_name },
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || req.headers.get('origin')}/auth/callback`,
+    redirectTo,
   })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  if (inviteError) {
+    const alreadyRegistered = inviteError.message.toLowerCase().includes('already been registered')
+      || inviteError.message.toLowerCase().includes('already registered')
+    if (!alreadyRegistered) {
+      return NextResponse.json({ error: inviteError.message }, { status: 400 })
+    }
+
+    // User exists but hasn't set password — send password reset link instead
+    const { error: resetError } = await adminClient.auth.resetPasswordForEmail(email, { redirectTo })
+    if (resetError) return NextResponse.json({ error: resetError.message }, { status: 400 })
+  }
+
   return NextResponse.json({ success: true })
 }
