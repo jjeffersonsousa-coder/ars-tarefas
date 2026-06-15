@@ -25,6 +25,7 @@ export default function ActivitiesPage() {
   const [filters, setFilters] = useState<ActivityFilters>({})
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [userDeptIds, setUserDeptIds] = useState<string[] | null>(null) // null = not loaded yet
   const [view, setView] = useState<ViewMode>('list')
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortAsc, setSortAsc] = useState(false)
@@ -35,18 +36,37 @@ export default function ActivitiesPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        supabase.from('user_profiles').select('*').eq('id', data.user.id).single()
-          .then(({ data: p }) => p && setProfile(p as UserProfile))
-      }
+      if (!data.user) return
+      supabase.from('user_profiles').select('*').eq('id', data.user.id).single()
+        .then(async ({ data: p }) => {
+          if (!p) return
+          setProfile(p as UserProfile)
+          const role = (p as UserProfile).role
+          if (role === 'super_admin' || role === 'admin') {
+            setUserDeptIds([]) // empty = no filter (see all)
+          } else {
+            const { data: depts } = await (supabase as any)
+              .from('user_departments').select('department_id').eq('user_id', data.user!.id)
+            setUserDeptIds((depts ?? []).map((d: { department_id: string }) => d.department_id))
+          }
+        })
     })
   }, [])
 
   const fetchActivities = useCallback(async () => {
+    if (userDeptIds === null) return // wait until departments are loaded
     setLoading(true)
     let query = (supabase as any)
       .from('activities')
       .select(`*, responsible:responsible_id(id, full_name, avatar_url), delegated_to:delegated_to_id(id, full_name, avatar_url), activity_tags(tag_id, tags(*))`)
+
+    // Department filter: admins see all; others see only their departments (no null dept_id)
+    if (userDeptIds.length > 0) {
+      query = query.in('department_id', userDeptIds)
+    } else if (userDeptIds.length === 0 && profile && profile.role !== 'super_admin' && profile.role !== 'admin') {
+      // User has no departments assigned — see nothing
+      query = query.eq('id', 'no-match')
+    }
 
     if (filters.search) query = query.ilike('title', `%${filters.search}%`)
     if (filters.context) query = query.ilike('context', `%${filters.context}%`)
@@ -87,7 +107,7 @@ export default function ActivitiesPage() {
       setActivities(mapped)
     }
     setLoading(false)
-  }, [filters, sortKey, sortAsc])
+  }, [filters, sortKey, sortAsc, userDeptIds, profile])
 
   useEffect(() => { fetchActivities() }, [fetchActivities])
 
