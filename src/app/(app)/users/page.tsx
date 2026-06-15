@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { getInitials, formatDate } from '@/lib/utils'
-import { Users, Mail, Search, X, Building2, UserPlus, Filter, Shield, Crown, Layers } from 'lucide-react'
+import { Users, Mail, Search, X, Building2, UserPlus, Filter, Shield, Crown, Layers, Clock, RefreshCw, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { createPortal } from 'react-dom'
 
@@ -267,6 +267,13 @@ function DeptModal({ user, departments, userDepts, onClose, onSaved }: {
   )
 }
 
+interface PendingInvite {
+  id: string
+  email: string
+  full_name: string
+  invited_at: string
+}
+
 export default function UsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
@@ -281,7 +288,40 @@ export default function UsersPage() {
   const [deptModalUser, setDeptModalUser] = useState<UserProfile | null>(null)
   const [editingCargo, setEditingCargo] = useState<string | null>(null)
   const [cargoValue, setCargoValue] = useState('')
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([])
+  const [resendingId, setResendingId] = useState<string | null>(null)
   const supabase = createClient()
+
+  async function loadPendingInvites(session: { access_token: string }) {
+    try {
+      const res = await fetch('/api/pending-invites', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setPendingInvites(data.pending ?? [])
+      }
+    } catch { /* silently ignore */ }
+  }
+
+  async function handleResend(invite: PendingInvite) {
+    setResendingId(invite.id)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/resend-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ email: invite.email, full_name: invite.full_name }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      toast.success('Convite reenviado!', { description: `Novo e-mail enviado para ${invite.email}` })
+    } catch (err: unknown) {
+      toast.error('Erro ao reenviar', { description: err instanceof Error ? err.message : 'Tente novamente' })
+    } finally {
+      setResendingId(null)
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -304,6 +344,10 @@ export default function UsersPage() {
             map[ud.user_id].push(ud)
           }
           setUserDepts(map)
+        }
+        if (p.role === 'admin' || p.role === 'super_admin') {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session) loadPendingInvites(session)
         }
       }
       setLoading(false)
@@ -378,9 +422,50 @@ export default function UsersPage() {
         )}
       </div>
 
-      <p className="text-sm text-gray-400 flex items-center gap-1.5">
-        <Filter className="h-3.5 w-3.5" />{filtered.length} de {users.length} usuários
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-400 flex items-center gap-1.5">
+          <Filter className="h-3.5 w-3.5" />{filtered.length} de {users.length} usuários
+        </p>
+      </div>
+
+      {/* Convites pendentes */}
+      {isAdmin && pendingInvites.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-amber-200">
+            <Clock className="h-4 w-4 text-amber-600" />
+            <span className="text-sm font-semibold text-amber-800">Convites pendentes ({pendingInvites.length})</span>
+            <span className="text-xs text-amber-600 ml-auto">Usuários que ainda não definiram a senha</span>
+          </div>
+          <div className="divide-y divide-amber-100">
+            {pendingInvites.map((invite) => (
+              <div key={invite.id} className="flex items-center gap-3 px-4 py-3">
+                <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                  <Mail className="h-4 w-4 text-amber-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">{invite.full_name || '—'}</p>
+                  <p className="text-xs text-gray-500 truncate">{invite.email}</p>
+                </div>
+                <span className="text-xs text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200 shrink-0">
+                  Aguardando
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={resendingId === invite.id}
+                  onClick={() => handleResend(invite)}
+                  className="h-7 rounded-lg text-xs gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-100 shrink-0"
+                >
+                  {resendingId === invite.id
+                    ? <Loader2 className="h-3 w-3 animate-spin" />
+                    : <RefreshCw className="h-3 w-3" />}
+                  Reenviar
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-28 bg-gray-100 rounded-xl animate-pulse" />)}</div>
