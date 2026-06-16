@@ -51,7 +51,8 @@ export function nextRecurrenceDate(activity: Activity): string | null {
 
   // Check if past the end date
   if (activity.recurrence_end_date) {
-    const end = new Date(activity.recurrence_end_date + 'T23:59:59')
+    const endPart = activity.recurrence_end_date.split('T')[0].split(' ')[0]
+    const end = new Date(endPart + 'T23:59:59')
     if (next > end) return null
   }
 
