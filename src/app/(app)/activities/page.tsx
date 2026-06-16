@@ -14,6 +14,7 @@ import Link from 'next/link'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { nextRecurrenceDate, buildNextOccurrence } from '@/lib/recurrence'
 
 type SortKey = 'created_at' | 'due_date' | 'priority' | 'title'
 type ViewMode = 'list' | 'kanban'
@@ -34,6 +35,42 @@ export default function ActivitiesPage() {
   const quickRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
+  // On load: recover any recurring activities that were concluded but whose next
+  // occurrence was never generated (e.g. completed before this feature was deployed,
+  // or a network failure during the insert).
+  const recoverMissingRecurrences = useCallback(async (entityId: string) => {
+    const today = new Date().toISOString().split('T')[0]
+
+    const { data: concluded } = await (supabase as any)
+      .from('activities')
+      .select('*')
+      .eq('entity_id', entityId)
+      .eq('is_recurring', true)
+      .eq('status', 'concluida')
+      .lt('due_date', today)
+
+    if (!concluded?.length) return
+
+    for (const act of concluded as Activity[]) {
+      const nextDate = nextRecurrenceDate(act)
+      if (!nextDate) continue
+
+      const { data: existing } = await (supabase as any)
+        .from('activities')
+        .select('id')
+        .eq('entity_id', act.entity_id)
+        .eq('title', act.title)
+        .eq('is_recurring', true)
+        .gte('due_date', today)
+        .limit(1)
+
+      if (existing?.length) continue
+
+      const payload = buildNextOccurrence(act, nextDate)
+      await (supabase as any).from('activities').insert(payload)
+    }
+  }, [supabase])
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) return
@@ -42,6 +79,9 @@ export default function ActivitiesPage() {
           if (!p) return
           setProfile(p as UserProfile)
           const role = (p as UserProfile).role
+          if ((p as UserProfile).entity_id) {
+            recoverMissingRecurrences((p as UserProfile).entity_id!)
+          }
           if (role === 'super_admin' || role === 'admin') {
             setUserDeptIds([]) // empty = no filter (see all)
           } else {
@@ -51,7 +91,7 @@ export default function ActivitiesPage() {
           }
         })
     })
-  }, [])
+  }, [recoverMissingRecurrences])
 
   const fetchActivities = useCallback(async () => {
     if (userDeptIds === null) return // wait until departments are loaded
