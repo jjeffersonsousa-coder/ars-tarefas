@@ -80,7 +80,7 @@ export default function ActivitiesPage() {
           setProfile(p as UserProfile)
           const role = (p as UserProfile).role
           if ((p as UserProfile).entity_id) {
-            recoverMissingRecurrences((p as UserProfile).entity_id!)
+            await recoverMissingRecurrences((p as UserProfile).entity_id!)
           }
           if (role === 'super_admin' || role === 'admin') {
             setUserDeptIds([]) // empty = no filter (see all)
