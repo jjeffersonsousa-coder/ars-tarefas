@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Building2, Users, Plus, Loader2, ShieldAlert, Mail, ChevronDown, ChevronRight, Crown, Check } from 'lucide-react'
+import { Building2, Users, Plus, Loader2, ShieldAlert, Mail, ChevronDown, ChevronRight, Crown, Check, ToggleLeft, ToggleRight, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import { getInitials } from '@/lib/utils'
 import { ROLE_LABELS, ROLE_COLORS, UserRole } from '@/lib/types'
@@ -20,6 +20,7 @@ interface Entity {
   document?: string | null
   email?: string | null
   created_at: string
+  is_active: boolean
 }
 
 interface UserProfile {
@@ -38,6 +39,8 @@ export default function AdminPage() {
   const [entities, setEntities] = useState<Entity[]>([])
   const [users, setUsers] = useState<UserProfile[]>([])
   const [expandedEntity, setExpandedEntity] = useState<string | null>(null)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [confirmToggle, setConfirmToggle] = useState<Entity | null>(null)
 
   // Wizard state
   const [step, setStep] = useState<Step>('empresa')
@@ -73,10 +76,10 @@ export default function AdminPage() {
 
   async function loadData() {
     const [{ data: ents }, { data: us }] = await Promise.all([
-      supabase.from('entities').select('*').order('created_at', { ascending: false }),
+      (supabase as any).from('entities').select('*').order('created_at', { ascending: false }),
       supabase.from('user_profiles').select('id, full_name, email, role, entity_id').order('full_name'),
     ])
-    if (ents) setEntities(ents.filter((e: Entity) => e.type !== 'pessoa_fisica'))
+    if (ents) setEntities((ents as Entity[]).filter((e) => e.type !== 'pessoa_fisica'))
     if (us) setUsers(us as UserProfile[])
   }
 
@@ -84,7 +87,7 @@ export default function AdminPage() {
     e.preventDefault()
     if (!entityName.trim()) return
     setSaving(true)
-    const { data: entity, error } = await supabase.from('entities').insert({
+    const { data: entity, error } = await (supabase as any).from('entities').insert({
       name: entityName.trim(),
       type: entityType,
       document: entityDocument || null,
@@ -129,6 +132,22 @@ export default function AdminPage() {
     }
   }
 
+  async function handleToggleActive(entity: Entity) {
+    setTogglingId(entity.id)
+    setConfirmToggle(null)
+    const { error } = await (supabase as any)
+      .from('entities')
+      .update({ is_active: !entity.is_active, updated_at: new Date().toISOString() })
+      .eq('id', entity.id)
+    if (error) {
+      toast.error('Erro ao alterar status da empresa')
+    } else {
+      toast.success(entity.is_active ? `"${entity.name}" inativada` : `"${entity.name}" reativada`)
+      await loadData()
+    }
+    setTogglingId(null)
+  }
+
   function resetWizard() {
     setStep('empresa')
     setCreatedEntity(null)
@@ -149,8 +168,42 @@ export default function AdminPage() {
     done: { label: 'Concluído', num: 3 },
   }
 
+  const activeEntities = entities.filter(e => e.is_active)
+  const inactiveEntities = entities.filter(e => !e.is_active)
+
   return (
     <div className="max-w-5xl mx-auto space-y-8">
+      {/* Confirm modal */}
+      {confirmToggle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${confirmToggle.is_active ? 'bg-red-100' : 'bg-green-100'}`}>
+                <AlertTriangle className={`h-5 w-5 ${confirmToggle.is_active ? 'text-red-600' : 'text-green-600'}`} />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900">{confirmToggle.is_active ? 'Inativar empresa?' : 'Reativar empresa?'}</p>
+                <p className="text-xs text-gray-500">{confirmToggle.name}</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 mb-5">
+              {confirmToggle.is_active
+                ? 'Os usuários desta empresa verão uma mensagem de acesso suspenso ao tentar entrar no sistema.'
+                : 'Os usuários desta empresa voltarão a ter acesso ao sistema normalmente.'}
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setConfirmToggle(null)}>Cancelar</Button>
+              <Button
+                className={`flex-1 rounded-xl ${confirmToggle.is_active ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white`}
+                onClick={() => handleToggleActive(confirmToggle)}
+              >
+                {confirmToggle.is_active ? 'Inativar' : 'Reativar'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #006494, #13293D)' }}>
@@ -158,7 +211,27 @@ export default function AdminPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Painel Super Admin</h1>
-          <p className="text-sm text-gray-500">Provisione empresas e seus administradores</p>
+          <p className="text-sm text-gray-500">Gerencie empresas e usuários do sistema</p>
+        </div>
+      </div>
+
+      {/* Contadores globais */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-2xl border p-4 shadow-sm">
+          <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Total empresas</p>
+          <p className="text-3xl font-bold text-gray-900 mt-1">{entities.length}</p>
+        </div>
+        <div className="bg-white rounded-2xl border p-4 shadow-sm">
+          <p className="text-xs text-green-600 font-medium uppercase tracking-wide">Ativas</p>
+          <p className="text-3xl font-bold text-green-600 mt-1">{activeEntities.length}</p>
+        </div>
+        <div className="bg-white rounded-2xl border p-4 shadow-sm">
+          <p className="text-xs text-red-500 font-medium uppercase tracking-wide">Inativas</p>
+          <p className="text-3xl font-bold text-red-500 mt-1">{inactiveEntities.length}</p>
+        </div>
+        <div className="bg-white rounded-2xl border p-4 shadow-sm">
+          <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Usuários</p>
+          <p className="text-3xl font-bold text-gray-900 mt-1">{users.length}</p>
         </div>
       </div>
 
@@ -303,40 +376,77 @@ export default function AdminPage() {
               const members = users.filter(u => u.entity_id === entity.id)
               const admins = members.filter(u => u.role === 'admin' || u.role === 'super_admin')
               const isExpanded = expandedEntity === entity.id
+              const isToggling = togglingId === entity.id
               return (
-                <div key={entity.id}>
-                  <button
-                    onClick={() => setExpandedEntity(isExpanded ? null : entity.id)}
-                    className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors text-left"
-                  >
-                    <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
-                      <Building2 className="h-5 w-5 text-indigo-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900">{entity.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-gray-400">{entity.type === 'empresa' ? 'Empresa' : 'Grupo Familiar'}</span>
-                        {entity.document && <span className="text-xs text-gray-300">• {entity.document}</span>}
+                <div key={entity.id} className={!entity.is_active ? 'bg-gray-50/60' : undefined}>
+                  <div className="flex items-center gap-4 px-5 py-4">
+                    {/* Expand button */}
+                    <button
+                      onClick={() => setExpandedEntity(isExpanded ? null : entity.id)}
+                      className="flex items-center gap-4 flex-1 min-w-0 text-left"
+                    >
+                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${entity.is_active ? 'bg-indigo-100' : 'bg-gray-200'}`}>
+                        <Building2 className={`h-5 w-5 ${entity.is_active ? 'text-indigo-600' : 'text-gray-400'}`} />
                       </div>
-                    </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className={`font-semibold truncate ${entity.is_active ? 'text-gray-900' : 'text-gray-400'}`}>{entity.name}</p>
+                          {!entity.is_active && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 border border-red-200 shrink-0">INATIVA</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs text-gray-400">{entity.type === 'empresa' ? 'Empresa' : 'Grupo Familiar'}</span>
+                          {entity.document && <span className="text-xs text-gray-300">• {entity.document}</span>}
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Right side */}
                     <div className="flex items-center gap-3 shrink-0">
                       <span className="text-xs text-gray-400 flex items-center gap-1">
                         <Users className="h-3.5 w-3.5" />{members.length}
                       </span>
                       {admins.length > 0 && (
-                        <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                        <span className="hidden sm:flex items-center gap-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
                           <Crown className="h-3 w-3" />{admins[0].full_name.split(' ')[0]}
                         </span>
                       )}
                       {admins.length === 0 && (
-                        <span className="text-xs text-red-500 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">Sem admin</span>
+                        <span className="hidden sm:block text-xs text-red-500 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">Sem admin</span>
                       )}
-                      {isExpanded ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
+
+                      {/* Toggle button */}
+                      <button
+                        onClick={() => setConfirmToggle(entity)}
+                        disabled={isToggling}
+                        title={entity.is_active ? 'Inativar empresa' : 'Reativar empresa'}
+                        className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl border font-medium transition-colors ${
+                          entity.is_active
+                            ? 'text-red-600 border-red-200 bg-red-50 hover:bg-red-100'
+                            : 'text-green-700 border-green-200 bg-green-50 hover:bg-green-100'
+                        }`}
+                      >
+                        {isToggling
+                          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          : entity.is_active
+                          ? <ToggleRight className="h-3.5 w-3.5" />
+                          : <ToggleLeft className="h-3.5 w-3.5" />
+                        }
+                        {entity.is_active ? 'Inativar' : 'Reativar'}
+                      </button>
+
+                      <button onClick={() => setExpandedEntity(isExpanded ? null : entity.id)}>
+                        {isExpanded ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
+                      </button>
                     </div>
-                  </button>
-                  {isExpanded && members.length > 0 && (
+                  </div>
+
+                  {isExpanded && (
                     <div className="bg-gray-50 border-t px-5 py-3 space-y-2">
-                      {members.map(m => (
+                      {members.length === 0 ? (
+                        <p className="text-xs text-gray-400 py-1">Nenhum usuário cadastrado.</p>
+                      ) : members.map(m => (
                         <div key={m.id} className="flex items-center gap-3 py-1">
                           <Avatar className="h-7 w-7 shrink-0">
                             <AvatarFallback className="text-[10px] font-bold bg-blue-100 text-blue-700">

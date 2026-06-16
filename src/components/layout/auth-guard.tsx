@@ -40,6 +40,19 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         setLoading(false)
         return
       }
+      // Check if company is active (super_admin is never blocked)
+      if ((p as UserProfile).role !== 'super_admin' && (p as UserProfile).entity_id) {
+        const { data: entity } = await (supabase as any)
+          .from('entities')
+          .select('is_active')
+          .eq('id', (p as UserProfile).entity_id)
+          .single()
+        if (entity && entity.is_active === false) {
+          router.replace('/suspended')
+          return
+        }
+      }
+
       setProfile(p as UserProfile)
       setLoading(false)
 
