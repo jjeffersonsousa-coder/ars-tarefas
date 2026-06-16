@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   }
 
   const [{ data: entities }, { data: users }] = await Promise.all([
-    adminClient.from('entities').select('*').neq('type', 'pessoa_fisica').order('name'),
+    adminClient.from('entities').select('*').order('name'),
     adminClient.from('user_profiles').select('id, full_name, email, role, entity_id').order('full_name'),
   ])
 
