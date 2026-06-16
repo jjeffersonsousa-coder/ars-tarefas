@@ -40,7 +40,9 @@ function toDateStr(d: Date): string {
 export function nextRecurrenceDate(activity: Activity): string | null {
   if (!activity.is_recurring || !activity.recurrence_type) return null
 
-  const base = activity.due_date ? new Date(activity.due_date + 'T12:00:00') : new Date()
+  // due_date may be a full timestamp ("2026-06-15T09:00:00") or date-only ("2026-06-15")
+  const datePart = activity.due_date ? activity.due_date.split('T')[0].split(' ')[0] : null
+  const base = datePart ? new Date(datePart + 'T12:00:00') : new Date()
   const interval = activity.recurrence_interval ?? 1
   const handling = activity.weekend_handling ?? 'none'
 

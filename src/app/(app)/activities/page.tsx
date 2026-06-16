@@ -39,7 +39,8 @@ export default function ActivitiesPage() {
   // occurrence was never generated (e.g. completed before this feature was deployed,
   // or a network failure during the insert).
   const recoverMissingRecurrences = useCallback(async (entityId: string) => {
-    const today = new Date().toISOString().split('T')[0]
+    const today = new Date().toISOString().split('T')[0] // "2026-06-16"
+    const todayEnd = today + 'T23:59:59'
 
     const { data: concluded } = await (supabase as any)
       .from('activities')
@@ -47,7 +48,7 @@ export default function ActivitiesPage() {
       .eq('entity_id', entityId)
       .eq('is_recurring', true)
       .eq('status', 'concluida')
-      .lt('due_date', today)
+      .lt('due_date', todayEnd) // works with both date and timestamp columns
 
     if (!concluded?.length) return
 
