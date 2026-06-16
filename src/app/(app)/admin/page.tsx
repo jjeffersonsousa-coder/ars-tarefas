@@ -75,12 +75,14 @@ export default function AdminPage() {
   }, [])
 
   async function loadData() {
-    const [{ data: ents }, { data: us }] = await Promise.all([
-      (supabase as any).from('entities').select('*').order('created_at', { ascending: false }),
-      supabase.from('user_profiles').select('id, full_name, email, role, entity_id').order('full_name'),
-    ])
-    if (ents) setEntities((ents as Entity[]).filter((e) => e.type !== 'pessoa_fisica'))
-    if (us) setUsers(us as UserProfile[])
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/admin/all-entities', {
+      headers: { Authorization: `Bearer ${session?.access_token || ''}` }
+    })
+    if (!res.ok) return
+    const json = await res.json()
+    setEntities(json.entities as Entity[])
+    setUsers(json.users as UserProfile[])
   }
 
   async function handleCreateEmpresa(e: React.FormEvent) {
