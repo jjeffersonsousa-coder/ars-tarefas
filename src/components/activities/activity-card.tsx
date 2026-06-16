@@ -4,12 +4,13 @@ import Link from 'next/link'
 import { Activity, PRIORITY_LABELS, STATUS_LABELS, STATUS_COLORS } from '@/lib/types'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn, formatDate, getInitials, isOverdue, isDueToday } from '@/lib/utils'
-import { CalendarDays, AlertTriangle, Clock, ChevronRight } from 'lucide-react'
+import { CalendarDays, AlertTriangle, Clock, ChevronRight, RefreshCw } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ActivityStatus } from '@/lib/types'
 import { toast } from 'sonner'
+import { nextRecurrenceDate, buildNextOccurrence } from '@/lib/recurrence'
 
 const PRIORITY_DOT: Record<string, string> = {
   urgente: 'bg-red-500',
@@ -58,6 +59,19 @@ export function ActivityCard({ activity, onUpdate, canEdit = false, compact = fa
     if (!error) {
       setStatus(newStatus)
       toast.success(`Status atualizado para "${STATUS_LABELS[newStatus]}"`)
+
+      // Generate next occurrence when a recurring activity is completed
+      if (newStatus === 'concluida' && activity.is_recurring) {
+        const nextDate = nextRecurrenceDate(activity)
+        if (nextDate) {
+          const payload = buildNextOccurrence(activity, nextDate)
+          const { error: insertError } = await (supabase as any).from('activities').insert(payload)
+          if (!insertError) {
+            toast.info('Próxima ocorrência criada', { description: `Nova recorrência para ${nextDate.split('-').reverse().join('/')}` })
+          }
+        }
+      }
+
       onUpdate?.()
     } else {
       toast.error('Erro ao atualizar status')
@@ -88,6 +102,12 @@ export function ActivityCard({ activity, onUpdate, canEdit = false, compact = fa
             )}>
               {activity.title}
             </h3>
+            {activity.is_recurring && (
+              <span title="Atividade recorrente" className="shrink-0 inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">
+                <RefreshCw className="h-2.5 w-2.5" />
+                {activity.recurrence_type === 'daily' ? 'Diária' : activity.recurrence_type === 'weekly' ? 'Semanal' : activity.recurrence_type === 'monthly' ? 'Mensal' : 'Anual'}
+              </span>
+            )}
             <ChevronRight className="h-3.5 w-3.5 text-gray-300 group-hover/link:text-blue-600 shrink-0 transition-colors" />
           </Link>
 
