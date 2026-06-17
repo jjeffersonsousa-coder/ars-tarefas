@@ -348,9 +348,12 @@ export default function UsersPage() {
       const { data: p } = await supabase.from('user_profiles').select('*').eq('id', user.id).single()
       if (p) {
         setProfile(p as UserProfile)
+        const { getViewedEntity } = await import('@/lib/viewed-entity')
+        const viewed = getViewedEntity()
+        const entityId = (viewed && (p as UserProfile).role === 'super_admin') ? viewed.id : (p.entity_id ?? '')
         const [{ data: us }, { data: deps }, { data: uds }] = await Promise.all([
-          supabase.from('user_profiles').select('*').eq('entity_id', p.entity_id ?? '').order('full_name'),
-          supabase.from('departments').select('*').eq('entity_id', p.entity_id ?? '').order('name'),
+          supabase.from('user_profiles').select('*').eq('entity_id', entityId).order('full_name'),
+          supabase.from('departments').select('*').eq('entity_id', entityId).order('name'),
           (supabase as any).from('user_departments').select('*, department:departments(*)'),
         ])
         if (us) setUsers(us as UserProfile[])

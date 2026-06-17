@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Activity, ActivityFilters, UserProfile } from '@/lib/types'
+import { Activity, ActivityFilters } from '@/lib/types'
 import { ActivityFiltersBar } from '@/components/activities/activity-filters'
 import { ActivityCard } from '@/components/activities/activity-card'
 import { ActivityKanban } from '@/components/activities/activity-kanban'
@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { nextRecurrenceDate, buildNextOccurrence } from '@/lib/recurrence'
+import { useEffectiveEntity } from '@/lib/hooks/use-effective-entity'
 
 type SortKey = 'created_at' | 'due_date' | 'priority' | 'title'
 type ViewMode = 'list' | 'kanban'
@@ -25,8 +26,7 @@ export default function ActivitiesPage() {
   const [activities, setActivities] = useState<Activity[]>([])
   const [filters, setFilters] = useState<ActivityFilters>({})
   const [loading, setLoading] = useState(true)
-  const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [userDeptIds, setUserDeptIds] = useState<string[] | null>(null) // null = not loaded yet
+  const { profile, effectiveEntityId, userDeptIds } = useEffectiveEntity()
   const [view, setView] = useState<ViewMode>('list')
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortAsc, setSortAsc] = useState(false)
@@ -73,39 +73,20 @@ export default function ActivitiesPage() {
   }, [supabase])
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) return
-      supabase.from('user_profiles').select('*').eq('id', data.user.id).single()
-        .then(async ({ data: p }) => {
-          if (!p) return
-          setProfile(p as UserProfile)
-          const role = (p as UserProfile).role
-          if ((p as UserProfile).entity_id) {
-            await recoverMissingRecurrences((p as UserProfile).entity_id!)
-          }
-          if (role === 'super_admin' || role === 'admin') {
-            setUserDeptIds([]) // empty = no filter (see all)
-          } else {
-            const { data: depts } = await (supabase as any)
-              .from('user_departments').select('department_id').eq('user_id', data.user!.id)
-            setUserDeptIds((depts ?? []).map((d: { department_id: string }) => d.department_id))
-          }
-        })
-    })
-  }, [recoverMissingRecurrences])
+    if (effectiveEntityId) recoverMissingRecurrences(effectiveEntityId)
+  }, [effectiveEntityId, recoverMissingRecurrences])
 
   const fetchActivities = useCallback(async () => {
-    if (userDeptIds === null) return // wait until departments are loaded
+    if (userDeptIds === null || !effectiveEntityId) return
     setLoading(true)
     let query = (supabase as any)
       .from('activities')
       .select(`*, responsible:responsible_id(id, full_name, avatar_url), delegated_to:delegated_to_id(id, full_name, avatar_url), activity_tags(tag_id, tags(*))`)
+      .eq('entity_id', effectiveEntityId)
 
-    // Department filter: admins see all; others see only their departments (no null dept_id)
     if (userDeptIds.length > 0) {
       query = query.in('department_id', userDeptIds)
     } else if (userDeptIds.length === 0 && profile && profile.role !== 'super_admin' && profile.role !== 'admin') {
-      // User has no departments assigned — see nothing
       query = query.eq('id', 'no-match')
     }
 
@@ -148,18 +129,18 @@ export default function ActivitiesPage() {
       setActivities(mapped)
     }
     setLoading(false)
-  }, [filters, sortKey, sortAsc, userDeptIds, profile])
+  }, [filters, sortKey, sortAsc, userDeptIds, profile, effectiveEntityId])
 
   useEffect(() => { fetchActivities() }, [fetchActivities])
 
   const canEdit = profile?.role === 'super_admin' || profile?.role === 'admin' || profile?.role === 'gestor' || profile?.role === 'editor'
 
   async function handleQuickCreate(e: React.KeyboardEvent) {
-    if (e.key !== 'Enter' || !quickTitle.trim() || !profile) return
+    if (e.key !== 'Enter' || !quickTitle.trim() || !profile || !effectiveEntityId) return
     setQuickSaving(true)
     const { error } = await (supabase as any).from('activities').insert({
       title: quickTitle.trim(),
-      entity_id: profile.entity_id,
+      entity_id: effectiveEntityId,
       department_id: profile.department_id || null,
       created_by: profile.id,
       status: 'pendente',
