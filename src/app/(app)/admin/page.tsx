@@ -64,7 +64,7 @@ export default function AdminPage() {
 
   function handleViewEntity(entity: Entity) {
     setViewedEntity({ id: entity.id, name: entity.name })
-    router.push('/dashboard')
+    window.location.href = '/dashboard'
   }
 
   useEffect(() => {

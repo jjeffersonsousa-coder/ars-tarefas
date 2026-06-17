@@ -17,8 +17,7 @@ export function ViewedEntityBanner() {
 
   function handleExit() {
     clearViewedEntity()
-    setEntity(null)
-    router.push('/admin')
+    window.location.href = '/admin'
   }
 
   return (
