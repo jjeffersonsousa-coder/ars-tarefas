@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Building2, Users, Plus, Loader2, ShieldAlert, Mail, ChevronDown, ChevronRight, Crown, Check, ToggleLeft, ToggleRight, AlertTriangle } from 'lucide-react'
+import { Building2, Users, Plus, Loader2, ShieldAlert, Mail, ChevronDown, ChevronRight, Crown, Check, ToggleLeft, ToggleRight, AlertTriangle, LayoutDashboard } from 'lucide-react'
+import { setViewedEntity } from '@/lib/viewed-entity'
 import { toast } from 'sonner'
 import { getInitials } from '@/lib/utils'
 import { ROLE_LABELS, ROLE_COLORS, UserRole } from '@/lib/types'
@@ -60,6 +61,11 @@ export default function AdminPage() {
 
   const supabase = createClient()
   const router = useRouter()
+
+  function handleViewEntity(entity: Entity) {
+    setViewedEntity({ id: entity.id, name: entity.name })
+    router.push('/dashboard')
+  }
 
   useEffect(() => {
     async function init() {
@@ -417,6 +423,16 @@ export default function AdminPage() {
                       {admins.length === 0 && (
                         <span className="hidden sm:block text-xs text-red-500 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">Sem admin</span>
                       )}
+
+                      {/* View dashboard button */}
+                      <button
+                        onClick={() => handleViewEntity(entity)}
+                        title="Ver painel desta empresa"
+                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl border font-medium text-indigo-700 border-indigo-200 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                      >
+                        <LayoutDashboard className="h-3.5 w-3.5" />
+                        Ver Painel
+                      </button>
 
                       {/* Toggle button */}
                       <button

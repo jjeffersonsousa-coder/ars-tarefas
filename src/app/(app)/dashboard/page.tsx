@@ -10,6 +10,7 @@ import { ActivityCard } from '@/components/activities/activity-card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Plus, RefreshCw, AlertTriangle, Bell, CalendarDays, ChevronDown } from 'lucide-react'
+import { getViewedEntity } from '@/lib/viewed-entity'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
 import { isOverdue, isDueToday, formatDate } from '@/lib/utils'
@@ -85,12 +86,21 @@ export default function DashboardPage() {
     })
   }, [])
 
+  // entity_id to use for queries: super_admin may be viewing another company
+  const effectiveEntityId = useMemo(() => {
+    if (!profile) return null
+    const viewed = getViewedEntity()
+    if (viewed && profile.role === 'super_admin') return viewed.id
+    return profile.entity_id
+  }, [profile])
+
   const fetchActivities = useCallback(async () => {
-    if (userDeptIds === null) return
+    if (userDeptIds === null || !effectiveEntityId) return
     setLoading(true)
     let activitiesQuery = (supabase as any)
       .from('activities')
       .select(`*, responsible:responsible_id(id, full_name, avatar_url), delegated_to:delegated_to_id(id, full_name, avatar_url), activity_tags(tag_id, tags(*))`)
+      .eq('entity_id', effectiveEntityId)
 
     if (userDeptIds.length > 0) {
       activitiesQuery = activitiesQuery.in('department_id', userDeptIds)
@@ -108,7 +118,7 @@ export default function DashboardPage() {
       })) as Activity[])
     }
     setLoading(false)
-  }, [userDeptIds, profile])
+  }, [userDeptIds, profile, effectiveEntityId])
 
   useEffect(() => { fetchActivities() }, [fetchActivities])
 

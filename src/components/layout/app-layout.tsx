@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Sidebar } from './sidebar'
 import { Header } from './header'
 import { TopNav } from './top-nav'
+import { ViewedEntityBanner } from './viewed-entity-banner'
 import { UserProfile } from '@/lib/types'
 import { getMenuStyle, getSidebarCollapsed, type MenuStyle } from '@/lib/layout-preferences'
 
@@ -44,6 +45,7 @@ export function AppLayout({ children, user }: AppLayoutProps) {
         userRole={user.role}
       />
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+        <ViewedEntityBanner />
         <Header
           user={user}
           menuStyle={menuStyle}

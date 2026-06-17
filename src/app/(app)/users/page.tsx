@@ -158,29 +158,47 @@ function DeptModal({ user, departments, userDepts, onClose, onSaved }: {
 
   async function handleSave() {
     setSaving(true)
-    try {
-      await (supabase as any).from('user_departments').delete().eq('user_id', user.id)
-      const toInsert = Object.entries(assignments)
-        .filter(([, role]) => role !== null)
-        .map(([deptId, role]) => ({ user_id: user.id, department_id: deptId, role }))
-      if (toInsert.length > 0) {
-        await (supabase as any).from('user_departments').insert(toInsert)
-      }
-      const newDepts: UserDepartment[] = toInsert.map(row => ({
-        id: '',
-        user_id: row.user_id,
-        department_id: row.department_id,
-        role: row.role as 'gestor' | 'usuario',
-        department: departments.find(d => d.id === row.department_id),
-      }))
-      onSaved(newDepts)
-      toast.success('Departamentos atualizados!')
-      onClose()
-    } catch {
-      toast.error('Erro ao salvar departamentos')
-    } finally {
+
+    const { error: delError } = await (supabase as any)
+      .from('user_departments').delete().eq('user_id', user.id)
+    if (delError) {
+      toast.error('Erro ao limpar departamentos: ' + delError.message)
       setSaving(false)
+      return
     }
+
+    const toInsert = Object.entries(assignments)
+      .filter(([, role]) => role !== null)
+      .map(([deptId, role]) => ({ user_id: user.id, department_id: deptId, role }))
+
+    if (toInsert.length > 0) {
+      const { error: insError } = await (supabase as any)
+        .from('user_departments').insert(toInsert)
+      if (insError) {
+        toast.error('Erro ao salvar departamentos: ' + insError.message)
+        setSaving(false)
+        return
+      }
+    }
+
+    // Update primary department_id on user profile (first selected dept)
+    const primaryDeptId = toInsert[0]?.department_id ?? null
+    await (supabase as any)
+      .from('user_profiles')
+      .update({ department_id: primaryDeptId, updated_at: new Date().toISOString() })
+      .eq('id', user.id)
+
+    const newDepts: UserDepartment[] = toInsert.map(row => ({
+      id: '',
+      user_id: row.user_id,
+      department_id: row.department_id,
+      role: row.role as 'gestor' | 'usuario',
+      department: departments.find(d => d.id === row.department_id),
+    }))
+    onSaved(newDepts)
+    toast.success('Departamentos atualizados!')
+    onClose()
+    setSaving(false)
   }
 
   const selected = Object.values(assignments).filter(r => r !== null).length
