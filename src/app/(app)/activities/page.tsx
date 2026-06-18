@@ -25,6 +25,8 @@ const PRIORITY_ORDER: Record<string, number> = { urgente: 0, alta: 1, media: 2, 
 export default function ActivitiesPage() {
   const [activities, setActivities] = useState<Activity[]>([])
   const [filters, setFilters] = useState<ActivityFilters>({})
+  const [showClosed, setShowClosed] = useState(false)
+  const [closedCount, setClosedCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const { profile, effectiveEntityId, userDeptIds } = useEffectiveEntity()
   const [view, setView] = useState<ViewMode>('list')
@@ -93,7 +95,12 @@ export default function ActivitiesPage() {
     if (filters.search) query = query.ilike('title', `%${filters.search}%`)
     if (filters.context) query = query.ilike('context', `%${filters.context}%`)
     if (filters.responsible_id) query = query.eq('responsible_id', filters.responsible_id)
-    if (filters.status?.length) query = query.in('status', filters.status)
+    if (filters.status?.length) {
+      query = query.in('status', filters.status)
+    } else if (!showClosed) {
+      // Default: hide concluded and cancelled
+      query = query.not('status', 'in', '("concluida","cancelada")')
+    }
     if (filters.priority?.length) query = query.in('priority', filters.priority)
     if (filters.due_date_from) query = query.gte('due_date', filters.due_date_from)
     if (filters.due_date_to) query = query.lte('due_date', filters.due_date_to + 'T23:59:59')
@@ -109,6 +116,20 @@ export default function ActivitiesPage() {
 
       if (filters.tag_ids?.length) {
         mapped = mapped.filter((a) => a.tags?.some((t) => filters.tag_ids!.includes(t.id)))
+      }
+
+      // Count closed for the badge (only when hidden)
+      if (!showClosed && !filters.status?.length) {
+        const closed = mapped.filter((a) => a.status === 'concluida' || a.status === 'cancelada')
+        // closed won't appear in mapped since filtered server-side; fetch count separately
+        const { count } = await (supabase as any)
+          .from('activities')
+          .select('id', { count: 'exact', head: true })
+          .eq('entity_id', effectiveEntityId)
+          .in('status', ['concluida', 'cancelada'])
+        setClosedCount(count ?? 0)
+      } else {
+        setClosedCount(0)
       }
 
       // client-side sort
@@ -129,7 +150,7 @@ export default function ActivitiesPage() {
       setActivities(mapped)
     }
     setLoading(false)
-  }, [filters, sortKey, sortAsc, userDeptIds, profile, effectiveEntityId])
+  }, [filters, sortKey, sortAsc, showClosed, userDeptIds, profile, effectiveEntityId])
 
   useEffect(() => { fetchActivities() }, [fetchActivities])
 
@@ -214,6 +235,30 @@ export default function ActivitiesPage() {
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
         <ActivityFiltersBar filters={filters} onChange={setFilters} entityId={profile?.entity_id || undefined} />
+
+        {/* Show/hide closed toggle */}
+        {!filters.status?.length && (
+          <button
+            onClick={() => setShowClosed(v => !v)}
+            className={cn(
+              'flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl border transition-colors shrink-0',
+              showClosed
+                ? 'bg-gray-100 border-gray-300 text-gray-700'
+                : 'bg-white border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            )}
+          >
+            {showClosed ? 'Ocultar encerradas' : (
+              <>
+                Mostrar encerradas
+                {closedCount > 0 && (
+                  <span className="bg-gray-200 text-gray-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                    {closedCount}
+                  </span>
+                )}
+              </>
+            )}
+          </button>
+        )}
 
         <div className="flex items-center gap-1.5 ml-auto shrink-0">
           {/* Sort */}

@@ -61,6 +61,9 @@ export function nextRecurrenceDate(activity: Activity): string | null {
 
 /** Builds the payload for the next occurrence of a recurring activity. */
 export function buildNextOccurrence(activity: Activity, nextDate: string): Partial<Activity> {
+  // Preserve the original time portion so UTC storage doesn't shift the displayed date
+  const timePart = activity.due_date?.includes('T') ? activity.due_date.split('T')[1] : '12:00:00'
+
   return {
     entity_id: activity.entity_id,
     department_id: activity.department_id,
@@ -70,7 +73,7 @@ export function buildNextOccurrence(activity: Activity, nextDate: string): Parti
     responsible_id: activity.responsible_id,
     priority: activity.priority,
     status: 'pendente',
-    due_date: nextDate,
+    due_date: nextDate + 'T' + timePart,
     follow_up_date: null,
     created_by: activity.created_by,
     is_recurring: true,

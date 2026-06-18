@@ -66,6 +66,7 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [recurringModal, setRecurringModal] = useState<{ data: ActivityFormData } | null>(null)
   // Recurrence state
   const [isRecurring, setIsRecurring] = useState(activity?.is_recurring ?? false)
   const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>(activity?.recurrence_type ?? 'weekly')
@@ -113,8 +114,18 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
   }
 
   async function onSubmit(data: ActivityFormData) {
+    // For recurring activities being edited, ask about scope before saving
+    if (activity?.is_recurring && activity?.id) {
+      setRecurringModal({ data })
+      return
+    }
+    await doSave(data, 'current')
+  }
+
+  async function doSave(data: ActivityFormData, scope: 'current' | 'future') {
     setSaving(true)
     setError(null)
+    setRecurringModal(null)
     try {
       const payload = {
         ...data,
@@ -145,6 +156,19 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
         if (updateError) throw updateError
         for (const change of changes) {
           await db.from('activity_history').insert({ activity_id: activity.id, user_id: userId, field_changed: change.field, old_value: change.old_value, new_value: change.new_value })
+        }
+
+        // If scope = future, also update all pending future occurrences of this recurring series
+        if (scope === 'future' && activity.is_recurring && activity.due_date) {
+          const futurePayload = { title: payload.title, description: payload.description, context: payload.context, responsible_id: payload.responsible_id, priority: payload.priority, department_id: selectedDeptId || null, ...recurrencePayload, updated_at: payload.updated_at }
+          await (db as any).from('activities')
+            .update(futurePayload)
+            .eq('entity_id', activity.entity_id)
+            .eq('title', activity.title)
+            .eq('is_recurring', true)
+            .eq('status', 'pendente')
+            .gt('due_date', activity.due_date)
+            .neq('id', activity.id)
         }
       } else {
         const insertPayload = { entity_id: payload.entity_id, department_id: selectedDeptId || userDepartmentId || null, title: payload.title, description: payload.description, context: payload.context, responsible_id: payload.responsible_id, delegated_to_id: payload.delegated_to_id, priority: payload.priority, status: payload.status, rich_notes: payload.rich_notes, due_date: payload.due_date, follow_up_date: payload.follow_up_date, created_by: userId, updated_at: payload.updated_at }
@@ -479,6 +503,49 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
           {activity ? 'Salvar Alterações' : '✨ Criar Atividade'}
         </Button>
       </div>
+
+      {/* Recurring scope modal */}
+      {recurringModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
+                <RefreshCw className="h-5 w-5 text-indigo-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-sm">Editar atividade recorrente</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Esta alteração se aplica a:</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <button
+                onClick={() => doSave(recurringModal.data, 'current')}
+                disabled={saving}
+                className="w-full text-left px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 transition-colors group"
+              >
+                <div className="text-sm font-semibold text-gray-800 group-hover:text-indigo-700">Apenas esta ocorrência</div>
+                <div className="text-xs text-gray-500 mt-0.5">Somente a atividade atual será alterada</div>
+              </button>
+              <button
+                onClick={() => doSave(recurringModal.data, 'future')}
+                disabled={saving}
+                className="w-full text-left px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 transition-colors group"
+              >
+                <div className="text-sm font-semibold text-gray-800 group-hover:text-indigo-700">Esta e todas as futuras</div>
+                <div className="text-xs text-gray-500 mt-0.5">Todas as próximas ocorrências pendentes serão atualizadas</div>
+              </button>
+            </div>
+            <Button
+              variant="outline" size="sm"
+              onClick={() => setRecurringModal(null)}
+              className="w-full rounded-xl"
+              disabled={saving}
+            >
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      )}
     </form>
   )
 }

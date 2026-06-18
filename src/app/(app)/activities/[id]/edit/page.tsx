@@ -23,7 +23,7 @@ export default function EditActivityPage() {
 
       const { data: p } = await supabase.from('user_profiles').select('*').eq('id', user.id).single()
       if (!p) { router.replace('/login'); return }
-      if (p.role !== 'admin' && p.role !== 'editor') { router.replace(`/activities/${id}`); return }
+      if (!['super_admin', 'admin', 'gestor', 'editor'].includes(p.role)) { router.replace(`/activities/${id}`); return }
       setProfile(p as UserProfile)
 
       const { data: act } = await (supabase as any)
