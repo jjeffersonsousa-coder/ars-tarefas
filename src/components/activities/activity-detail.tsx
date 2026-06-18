@@ -33,7 +33,7 @@ export function ActivityDetail({
   userRole,
   currentUserId,
 }: ActivityDetailProps) {
-  const canEdit = userRole === 'admin' || userRole === 'editor'
+  const canEdit = ['super_admin', 'admin', 'gestor', 'editor'].includes(userRole)
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
