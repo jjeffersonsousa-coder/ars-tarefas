@@ -76,7 +76,7 @@ export function Sidebar({ collapsed = false, onToggleCollapse, userRole }: Sideb
         padding: collapsed ? '0 12px' : '0 20px',
         justifyContent: collapsed ? 'center' : 'flex-start',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
           <div style={{
             width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
             background: 'linear-gradient(135deg, #1B98E0, #006494)',
@@ -91,7 +91,7 @@ export function Sidebar({ collapsed = false, onToggleCollapse, userRole }: Sideb
               <p style={{ color: '#7BA7BC', fontSize: '10px', margin: 0, lineHeight: 1 }}>Atividades & Rotinas</p>
             </div>
           )}
-        </div>
+        </Link>
       </div>
 
       {/* Nav */}
