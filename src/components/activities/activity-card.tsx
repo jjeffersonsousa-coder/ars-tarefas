@@ -62,12 +62,16 @@ export function ActivityCard({ activity, onUpdate, canEdit = false, compact = fa
 
       // Generate next occurrence when a recurring activity is completed
       if (newStatus === 'concluida' && activity.is_recurring) {
+        const today = new Date().toISOString().split('T')[0]
+        const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
         const nextDate = nextRecurrenceDate(activity)
         if (nextDate) {
-          const payload = buildNextOccurrence(activity, nextDate)
+          // If the computed next date is today or in the past, use tomorrow to avoid instant re-appearance
+          const effectiveDate = nextDate <= today ? tomorrow : nextDate
+          const payload = buildNextOccurrence(activity, effectiveDate)
           const { error: insertError } = await (supabase as any).from('activities').insert(payload)
           if (!insertError) {
-            toast.info('Próxima ocorrência criada', { description: `Nova recorrência para ${nextDate.split('-').reverse().join('/')}` })
+            toast.info('Próxima ocorrência criada', { description: `Nova recorrência para ${effectiveDate.split('-').reverse().join('/')}` })
           }
         }
       }
