@@ -41,35 +41,45 @@ export default function ActivitiesPage() {
   // occurrence was never generated (e.g. completed before this feature was deployed,
   // or a network failure during the insert).
   const recoverMissingRecurrences = useCallback(async (entityId: string) => {
-    const today = new Date().toISOString().split('T')[0] // "2026-06-16"
-    const todayEnd = today + 'T23:59:59'
+    const today = new Date().toISOString().split('T')[0]
 
+    // Find all unique recurring series that have concluded activities
     const { data: concluded } = await (supabase as any)
       .from('activities')
       .select('*')
       .eq('entity_id', entityId)
       .eq('is_recurring', true)
       .eq('status', 'concluida')
-      .lt('due_date', todayEnd) // works with both date and timestamp columns
+      .order('due_date', { ascending: false }) // most recent first
 
     if (!concluded?.length) return
 
-    for (const act of concluded as Activity[]) {
-      const nextDate = nextRecurrenceDate(act)
-      if (!nextDate) continue
+    // Track which series we've already processed to avoid duplicates
+    const processed = new Set<string>()
 
+    for (const act of concluded as Activity[]) {
+      const seriesKey = `${act.entity_id}::${act.title}`
+      if (processed.has(seriesKey)) continue
+      processed.add(seriesKey)
+
+      // Check if there's ANY active (non-concluded, non-cancelled) occurrence for this series
       const { data: existing } = await (supabase as any)
         .from('activities')
         .select('id')
         .eq('entity_id', act.entity_id)
         .eq('title', act.title)
         .eq('is_recurring', true)
-        .gte('due_date', today)
+        .not('status', 'in', '("concluida","cancelada")')
         .limit(1)
 
-      if (existing?.length) continue
+      if (existing?.length) continue // series already has an active occurrence
 
-      const payload = buildNextOccurrence(act, nextDate)
+      // Generate next occurrence — if it would be in the past, use today instead
+      const nextDate = nextRecurrenceDate(act)
+      if (!nextDate) continue
+      const effectiveDate = nextDate < today ? today : nextDate
+
+      const payload = buildNextOccurrence(act, effectiveDate)
       await (supabase as any).from('activities').insert(payload)
     }
   }, [supabase])
