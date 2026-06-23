@@ -240,7 +240,7 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
             <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide flex items-center gap-1.5">
               <Layers className="h-3.5 w-3.5" style={{ color: '#9B59B6' }} />Departamento
             </Label>
-            {userRole === 'admin' ? (
+            {['super_admin', 'admin', 'gestor'].includes(userRole ?? '') ? (
               <Select value={selectedDeptId || 'none'} onValueChange={(v) => setSelectedDeptId(v === 'none' ? '' : v)}>
                 <SelectTrigger className="mt-1.5 h-11 rounded-xl"><SelectValue placeholder="Selecione o departamento" /></SelectTrigger>
                 <SelectContent>
