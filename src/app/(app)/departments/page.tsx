@@ -66,12 +66,14 @@ function DeptModal({ dept, entityId, onClose, onSaved }: { dept: Department | nu
   )
 }
 
+type DeptMember = { id: string; full_name: string; role: string }
+
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState<Department[]>([])
-  const [memberCounts, setMemberCounts] = useState<Record<string, number>>({})
+  const [membersByDept, setMembersByDept] = useState<Record<string, DeptMember[]>>({})
+  const [expandedDept, setExpandedDept] = useState<string | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [modalDept, setModalDept] = useState<Department | null | 'new'>('new' as any)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Department | null>(null)
   const supabase = createClient()
@@ -83,14 +85,26 @@ export default function DepartmentsPage() {
       const { data: p } = await supabase.from('user_profiles').select('*').eq('id', user.id).single()
       if (p) {
         setProfile(p as UserProfile)
-        const { data: deps } = await supabase.from('departments').select('*').eq('entity_id', p.entity_id ?? '').order('name')
+        const entityId = p.entity_id ?? ''
+        const { data: deps } = await supabase.from('departments').select('*').eq('entity_id', entityId).order('name')
         if (deps) {
           setDepartments(deps as Department[])
-          const { data: members } = await supabase.from('user_profiles').select('id, department_id').eq('entity_id', p.entity_id ?? '')
-          if (members) {
-            const counts: Record<string, number> = {}
-            members.forEach((m: any) => { if (m.department_id) counts[m.department_id] = (counts[m.department_id] || 0) + 1 })
-            setMemberCounts(counts)
+          // Load members per department from user_departments table
+          const { data: udRows } = await (supabase as any)
+            .from('user_departments')
+            .select('department_id, user_profiles(id, full_name, role)')
+            .in('department_id', (deps as Department[]).map((d) => d.id))
+          if (udRows) {
+            const byDept: Record<string, DeptMember[]> = {}
+            udRows.forEach((row: any) => {
+              const m = row.user_profiles as DeptMember
+              if (!m) return
+              if (!byDept[row.department_id]) byDept[row.department_id] = []
+              if (!byDept[row.department_id].find((x) => x.id === m.id)) {
+                byDept[row.department_id].push(m)
+              }
+            })
+            setMembersByDept(byDept)
           }
         }
       }
@@ -139,31 +153,54 @@ export default function DepartmentsPage() {
         <div className="bg-white rounded-xl border divide-y">
           {loading ? (
             [...Array(3)].map((_, i) => <div key={i} className="h-20 bg-gray-100 animate-pulse" />)
-          ) : departments.map((dept) => (
-            <div key={dept.id} className="flex items-center gap-4 p-4">
-              <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                <Building2 className="h-5 w-5 text-blue-700" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-900">{dept.name}</p>
-                {dept.description && <p className="text-sm text-gray-500">{dept.description}</p>}
-                <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
-                  <Users className="h-3 w-3" />
-                  {memberCounts[dept.id] || 0} membro{(memberCounts[dept.id] || 0) !== 1 ? 's' : ''}
-                </p>
-              </div>
-              {isAdmin && (
-                <div className="flex gap-2">
-                  <button onClick={() => { setEditing(dept); setModalOpen(true) }} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                    <Pencil className="h-4 w-4 text-gray-500" />
-                  </button>
-                  <button onClick={() => handleDelete(dept.id)} className="p-2 rounded-lg hover:bg-red-50 transition-colors">
-                    <Trash2 className="h-4 w-4 text-red-400" />
-                  </button>
+          ) : departments.map((dept) => {
+            const members = membersByDept[dept.id] || []
+            const isExpanded = expandedDept === dept.id
+            return (
+              <div key={dept.id}>
+                <div className="flex items-center gap-4 p-4">
+                  <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                    <Building2 className="h-5 w-5 text-blue-700" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900">{dept.name}</p>
+                    {dept.description && <p className="text-sm text-gray-500">{dept.description}</p>}
+                    <button
+                      onClick={() => setExpandedDept(isExpanded ? null : dept.id)}
+                      className="text-xs text-blue-600 hover:text-blue-800 mt-0.5 flex items-center gap-1 transition-colors"
+                    >
+                      <Users className="h-3 w-3" />
+                      {members.length} membro{members.length !== 1 ? 's' : ''}
+                      {members.length > 0 && <span className="ml-1">{isExpanded ? '▲ ocultar' : '▼ ver'}</span>}
+                    </button>
+                  </div>
+                  {isAdmin && (
+                    <div className="flex gap-2">
+                      <button onClick={() => { setEditing(dept); setModalOpen(true) }} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <Pencil className="h-4 w-4 text-gray-500" />
+                      </button>
+                      <button onClick={() => handleDelete(dept.id)} className="p-2 rounded-lg hover:bg-red-50 transition-colors">
+                        <Trash2 className="h-4 w-4 text-red-400" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+                {isExpanded && members.length > 0 && (
+                  <div className="bg-gray-50 border-t px-4 py-3 flex flex-wrap gap-2">
+                    {members.map((m) => (
+                      <div key={m.id} className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-full px-3 py-1">
+                        <div className="h-5 w-5 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-[10px] font-bold shrink-0">
+                          {m.full_name?.charAt(0).toUpperCase() || '?'}
+                        </div>
+                        <span className="text-xs font-medium text-gray-700">{m.full_name}</span>
+                        <span className="text-[10px] text-gray-400 capitalize">{m.role}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
