@@ -9,7 +9,9 @@ import { ActivityFiltersBar } from '@/components/activities/activity-filters'
 import { ActivityCard } from '@/components/activities/activity-card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Plus, RefreshCw, AlertTriangle, Bell, CalendarDays, ChevronDown } from 'lucide-react'
+import { Plus, RefreshCw, AlertTriangle, Bell, CalendarDays, ChevronDown, Layers } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Department } from '@/lib/types'
 import { getViewedEntity } from '@/lib/viewed-entity'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
@@ -65,6 +67,8 @@ export default function DashboardPage() {
   const [period, setPeriod] = useState<Period>('month')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [selectedDeptFilter, setSelectedDeptFilter] = useState<string>('all')
   const supabase = createClient()
 
   useEffect(() => {
@@ -73,8 +77,18 @@ export default function DashboardPage() {
       supabase.from('user_profiles').select('*').eq('id', data.user.id).single()
         .then(async ({ data: p }) => {
           if (!p) return
-          setProfile(p as UserProfile)
-          const role = (p as UserProfile).role
+          const prof = p as UserProfile
+          setProfile(prof)
+          const role = prof.role
+
+          // Load departments for filter
+          const entityId = prof.entity_id
+          if (entityId) {
+            const { data: deptList } = await (supabase as any)
+              .from('departments').select('*').eq('entity_id', entityId).order('name')
+            setDepartments(deptList ?? [])
+          }
+
           if (role === 'super_admin' || role === 'admin') {
             setUserDeptIds([])
           } else {
@@ -124,14 +138,19 @@ export default function DashboardPage() {
 
   const periodActivities = useMemo(() => {
     const range = getPeriodRange(period, customFrom, customTo)
-    if (!range) return allActivities
-    return allActivities.filter((a) => {
+    let list = allActivities
+    // Apply department filter
+    if (selectedDeptFilter !== 'all') {
+      list = list.filter((a) => a.department_id === selectedDeptFilter)
+    }
+    if (!range) return list
+    return list.filter((a) => {
       const date = a.due_date || a.created_at
       if (!date) return false
       const d = date.slice(0, 10)
       return d >= range.from && d <= range.to
     })
-  }, [allActivities, period, customFrom, customTo])
+  }, [allActivities, period, customFrom, customTo, selectedDeptFilter])
 
   const stats: DashboardStats = useMemo(() => ({
     total: periodActivities.length,
@@ -142,24 +161,28 @@ export default function DashboardPage() {
     pending: periodActivities.filter((a) => a.status === 'pendente').length,
   }), [periodActivities])
 
-  // Seções especiais
+  // Seções especiais — respeitam o filtro de departamento
+  const deptFiltered = useMemo(() =>
+    selectedDeptFilter === 'all' ? allActivities : allActivities.filter((a) => a.department_id === selectedDeptFilter),
+    [allActivities, selectedDeptFilter])
+
   const followUpToday = useMemo(() =>
-    allActivities.filter((a) => a.follow_up_date && isToday(parseISO(a.follow_up_date)) && a.status !== 'concluida' && a.status !== 'cancelada'),
-    [allActivities])
+    deptFiltered.filter((a) => a.follow_up_date && isToday(parseISO(a.follow_up_date)) && a.status !== 'concluida' && a.status !== 'cancelada'),
+    [deptFiltered])
 
   const overdueList = useMemo(() =>
-    allActivities.filter((a) => isOverdue(a.due_date) && a.status !== 'concluida' && a.status !== 'cancelada'),
-    [allActivities])
+    deptFiltered.filter((a) => isOverdue(a.due_date) && a.status !== 'concluida' && a.status !== 'cancelada'),
+    [deptFiltered])
 
   const next7Days = useMemo(() => {
     const today = startOfDay(new Date())
     const in7 = addDays(today, 7)
-    return allActivities.filter((a) => {
+    return deptFiltered.filter((a) => {
       if (!a.due_date) return false
       const d = parseISO(a.due_date)
       return d >= today && d <= in7 && a.status !== 'concluida' && a.status !== 'cancelada'
     })
-  }, [allActivities])
+  }, [deptFiltered])
 
   // Lista filtrada para a seção geral
   const filteredActivities = useMemo(() => {
@@ -201,6 +224,20 @@ export default function DashboardPage() {
               </button>
             ))}
           </div>
+          {departments.length > 0 && (
+            <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-1.5">
+              <Layers className="h-3.5 w-3.5 text-purple-500 shrink-0" />
+              <Select value={selectedDeptFilter} onValueChange={setSelectedDeptFilter}>
+                <SelectTrigger className="border-0 shadow-none h-auto p-0 text-xs font-medium text-gray-600 w-36 focus:ring-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os departamentos</SelectItem>
+                  {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <Button variant="outline" size="sm" onClick={fetchActivities} className="rounded-xl gap-2">
             <RefreshCw className="h-3.5 w-3.5" />
           </Button>
