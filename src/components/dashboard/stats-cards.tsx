@@ -12,14 +12,14 @@ interface StatsCardsProps {
 
 const cards = [
   {
-    key: 'total',
-    label: 'Total',
-    icon: ListChecks,
-    gradient: 'from-blue-600 to-blue-700',
-    bg: 'bg-blue-50',
-    text: 'text-blue-700',
-    shadow: 'shadow-blue-100',
-    ring: 'ring-blue-500',
+    key: 'pending',
+    label: 'Pendentes',
+    icon: CircleDot,
+    gradient: 'from-slate-500 to-gray-600',
+    bg: 'bg-slate-50',
+    text: 'text-slate-600',
+    shadow: 'shadow-slate-100',
+    ring: 'ring-slate-400',
   },
   {
     key: 'overdue',
@@ -62,14 +62,14 @@ const cards = [
     ring: 'ring-emerald-400',
   },
   {
-    key: 'pending',
-    label: 'Pendentes',
-    icon: CircleDot,
-    gradient: 'from-slate-500 to-gray-600',
-    bg: 'bg-slate-50',
-    text: 'text-slate-600',
-    shadow: 'shadow-slate-100',
-    ring: 'ring-slate-400',
+    key: 'total',
+    label: 'Total no Período',
+    icon: ListChecks,
+    gradient: 'from-blue-600 to-blue-700',
+    bg: 'bg-blue-50',
+    text: 'text-blue-700',
+    shadow: 'shadow-blue-100',
+    ring: 'ring-blue-500',
   },
 ]
 

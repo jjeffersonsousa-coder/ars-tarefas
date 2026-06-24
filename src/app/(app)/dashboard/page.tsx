@@ -153,8 +153,7 @@ export default function DashboardPage() {
   }, [allActivities, period, customFrom, customTo, selectedDeptFilter])
 
   const stats: DashboardStats = useMemo(() => ({
-    // Total: only active (excludes concluded and cancelled)
-    total: periodActivities.filter((a) => a.status !== 'concluida' && a.status !== 'cancelada').length,
+    total: periodActivities.length,
     overdue: periodActivities.filter((a) => isOverdue(a.due_date) && a.status !== 'concluida' && a.status !== 'cancelada').length,
     dueToday: periodActivities.filter((a) => isDueToday(a.due_date) && a.status !== 'concluida' && a.status !== 'cancelada').length,
     inProgress: periodActivities.filter((a) => a.status === 'em_andamento').length,
