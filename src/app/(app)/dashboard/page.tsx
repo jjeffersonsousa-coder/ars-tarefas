@@ -153,9 +153,10 @@ export default function DashboardPage() {
   }, [allActivities, period, customFrom, customTo, selectedDeptFilter])
 
   const stats: DashboardStats = useMemo(() => ({
-    total: periodActivities.length,
+    // Total: only active (excludes concluded and cancelled)
+    total: periodActivities.filter((a) => a.status !== 'concluida' && a.status !== 'cancelada').length,
     overdue: periodActivities.filter((a) => isOverdue(a.due_date) && a.status !== 'concluida' && a.status !== 'cancelada').length,
-    dueToday: periodActivities.filter((a) => isDueToday(a.due_date)).length,
+    dueToday: periodActivities.filter((a) => isDueToday(a.due_date) && a.status !== 'concluida' && a.status !== 'cancelada').length,
     inProgress: periodActivities.filter((a) => a.status === 'em_andamento').length,
     completed: periodActivities.filter((a) => a.status === 'concluida').length,
     pending: periodActivities.filter((a) => a.status === 'pendente').length,
@@ -184,7 +185,7 @@ export default function DashboardPage() {
     })
   }, [deptFiltered])
 
-  // Lista filtrada para a seção geral
+  // Lista filtrada para a seção geral — usa periodActivities como base (já tem filtro de dept)
   const filteredActivities = useMemo(() => {
     let list = periodActivities
     if (activeStatFilter === 'overdue') list = list.filter((a) => isOverdue(a.due_date) && a.status !== 'concluida' && a.status !== 'cancelada')
@@ -201,7 +202,7 @@ export default function DashboardPage() {
     if (filters.due_date_to) list = list.filter((a) => a.due_date && a.due_date <= filters.due_date_to! + 'T23:59:59')
     if (filters.tag_ids?.length) list = list.filter((a) => a.tags?.some((t) => filters.tag_ids!.includes(t.id)))
     return list
-  }, [allActivities, activeStatFilter, filters])
+  }, [periodActivities, activeStatFilter, filters])
 
   const canEdit = profile?.role === 'super_admin' || profile?.role === 'admin' || profile?.role === 'gestor' || profile?.role === 'editor'
   const hasFilters = activeStatFilter || Object.values(filters).some(v => v && (Array.isArray(v) ? v.length > 0 : true))
