@@ -14,7 +14,7 @@ import Link from 'next/link'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { nextRecurrenceDate, buildNextOccurrence } from '@/lib/recurrence'
+import { nextRecurrenceDate, buildNextOccurrence, skipToMonday } from '@/lib/recurrence'
 import { useEffectiveEntity } from '@/lib/hooks/use-effective-entity'
 
 type SortKey = 'created_at' | 'due_date' | 'priority' | 'title'
@@ -74,13 +74,19 @@ export default function ActivitiesPage() {
 
       if (existing?.length) continue // series already has an active occurrence
 
-      // Generate next occurrence — if it would be in the past, use today instead
+      // Generate next occurrence — if it would be in the past, use today; skip weekends to Monday
       const nextDate = nextRecurrenceDate(act)
       if (!nextDate) continue
-      const effectiveDate = nextDate < today ? today : nextDate
+      let effectiveDate = nextDate < today ? today : nextDate
+      effectiveDate = skipToMonday(effectiveDate)
 
       const payload = buildNextOccurrence(act, effectiveDate)
-      await (supabase as any).from('activities').insert(payload)
+      const token = (await supabase.auth.getSession()).data.session?.access_token
+      await fetch('/api/activities/insert-occurrence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ occurrence: payload }),
+      })
     }
   }, [supabase])
 

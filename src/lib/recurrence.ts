@@ -36,6 +36,15 @@ function toDateStr(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
+/** Advances a date string to Monday if it falls on Saturday or Sunday. */
+export function skipToMonday(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00')
+  const day = d.getDay()
+  if (day === 6) d.setDate(d.getDate() + 2) // Saturday → Monday
+  if (day === 0) d.setDate(d.getDate() + 1) // Sunday → Monday
+  return toDateStr(d)
+}
+
 /** Returns the next due_date string for a recurring activity, or null if the series ended. */
 export function nextRecurrenceDate(activity: Activity): string | null {
   if (!activity.is_recurring || !activity.recurrence_type) return null

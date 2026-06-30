@@ -10,7 +10,7 @@ import { useState } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ActivityStatus } from '@/lib/types'
 import { toast } from 'sonner'
-import { nextRecurrenceDate, buildNextOccurrence } from '@/lib/recurrence'
+import { nextRecurrenceDate, buildNextOccurrence, skipToMonday } from '@/lib/recurrence'
 
 const PRIORITY_DOT: Record<string, string> = {
   urgente: 'bg-red-500',
@@ -52,13 +52,29 @@ export function ActivityCard({ activity, onUpdate, canEdit = false, compact = fa
   async function handleStatusChange(newStatus: ActivityStatus) {
     if (!canEdit) return
     setUpdating(true)
+    const oldStatus = status
+    const now = new Date().toISOString()
+
     const { error } = await supabase
       .from('activities')
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .update({ status: newStatus, updated_at: now })
       .eq('id', activity.id)
+
     if (!error) {
       setStatus(newStatus)
       toast.success(`Status atualizado para "${STATUS_LABELS[newStatus]}"`)
+
+      // Log status change to history
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from('activity_history').insert({
+          activity_id: activity.id,
+          user_id: user.id,
+          field_changed: 'status',
+          old_value: oldStatus,
+          new_value: newStatus,
+        })
+      }
 
       // Generate next occurrence when a recurring activity is completed
       if (newStatus === 'concluida' && activity.is_recurring) {
@@ -66,11 +82,20 @@ export function ActivityCard({ activity, onUpdate, canEdit = false, compact = fa
         const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
         const nextDate = nextRecurrenceDate(activity)
         if (nextDate) {
-          // If the computed next date is today or in the past, use tomorrow to avoid instant re-appearance
-          const effectiveDate = nextDate <= today ? tomorrow : nextDate
+          // Use tomorrow if next date is today or in the past, then skip weekends
+          let effectiveDate = nextDate <= today ? tomorrow : nextDate
+          effectiveDate = skipToMonday(effectiveDate)
+
           const payload = buildNextOccurrence(activity, effectiveDate)
-          const { error: insertError } = await (supabase as any).from('activities').insert(payload)
-          if (!insertError) {
+          const token = (await supabase.auth.getSession()).data.session?.access_token
+
+          // Use API route so super_admin can insert into other entities (bypasses RLS)
+          const res = await fetch('/api/activities/insert-occurrence', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ occurrence: payload }),
+          })
+          if (res.ok) {
             toast.info('Próxima ocorrência criada', { description: `Nova recorrência para ${effectiveDate.split('-').reverse().join('/')}` })
           }
         }
