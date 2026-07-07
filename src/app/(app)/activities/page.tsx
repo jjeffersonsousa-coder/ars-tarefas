@@ -81,12 +81,17 @@ export default function ActivitiesPage() {
       effectiveDate = skipToMonday(effectiveDate)
 
       const payload = buildNextOccurrence(act, effectiveDate)
-      const token = (await supabase.auth.getSession()).data.session?.access_token
-      await fetch('/api/activities/insert-occurrence', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ occurrence: payload }),
-      })
+
+      // Try direct insert first; fall back to API route for super_admin cross-entity
+      const { error: insertErr } = await (supabase as any).from('activities').insert(payload)
+      if (insertErr) {
+        const token = (await supabase.auth.getSession()).data.session?.access_token
+        await fetch('/api/activities/insert-occurrence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ occurrence: payload }),
+        })
+      }
     }
   }, [supabase])
 

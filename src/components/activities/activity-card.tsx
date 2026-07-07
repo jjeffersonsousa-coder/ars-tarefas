@@ -87,17 +87,19 @@ export function ActivityCard({ activity, onUpdate, canEdit = false, compact = fa
           effectiveDate = skipToMonday(effectiveDate)
 
           const payload = buildNextOccurrence(activity, effectiveDate)
-          const token = (await supabase.auth.getSession()).data.session?.access_token
 
-          // Use API route so super_admin can insert into other entities (bypasses RLS)
-          const res = await fetch('/api/activities/insert-occurrence', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ occurrence: payload }),
-          })
-          if (res.ok) {
-            toast.info('Próxima ocorrência criada', { description: `Nova recorrência para ${effectiveDate.split('-').reverse().join('/')}` })
+          // Try direct insert first (works for same entity users)
+          const { error: insertError } = await (supabase as any).from('activities').insert(payload)
+          if (insertError) {
+            // Fallback: API route bypasses RLS for super_admin viewing another entity
+            const token = (await supabase.auth.getSession()).data.session?.access_token
+            await fetch('/api/activities/insert-occurrence', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ occurrence: payload }),
+            })
           }
+          toast.info('Próxima ocorrência criada', { description: `Nova recorrência para ${effectiveDate.split('-').reverse().join('/')}` })
         }
       }
 
