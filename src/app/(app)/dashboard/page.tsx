@@ -9,7 +9,7 @@ import { ActivityFiltersBar } from '@/components/activities/activity-filters'
 import { ActivityCard } from '@/components/activities/activity-card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Plus, RefreshCw, AlertTriangle, Bell, CalendarDays, ChevronDown, Layers } from 'lucide-react'
+import { Plus, RefreshCw, AlertTriangle, Bell, CalendarDays, ChevronDown, Layers, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Department } from '@/lib/types'
 import { getViewedEntity } from '@/lib/viewed-entity'
@@ -31,26 +31,45 @@ function SectionHeader({ icon: Icon, label, count, color }: { icon: React.Elemen
 
 type Period = 'today' | 'week' | 'month' | 'year' | 'custom'
 
-function getPeriodRange(period: Period, customFrom: string, customTo: string): { from: string; to: string } | null {
+function getPeriodRange(period: Period, customFrom: string, customTo: string, offset = 0): { from: string; to: string } | null {
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
   const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
   if (period === 'today') { const t = fmt(now); return { from: t, to: t } }
   if (period === 'week') {
-    const mon = new Date(now); mon.setDate(now.getDate() - now.getDay() + 1)
+    const mon = new Date(now); mon.setDate(now.getDate() - now.getDay() + 1 + offset * 7)
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6)
     return { from: fmt(mon), to: fmt(sun) }
   }
   if (period === 'month') {
-    const from = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`
-    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    return { from, to: fmt(last) }
+    const d = new Date(now.getFullYear(), now.getMonth() + offset, 1)
+    const last = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+    return { from: fmt(d), to: fmt(last) }
   }
   if (period === 'year') {
-    return { from: `${now.getFullYear()}-01-01`, to: `${now.getFullYear()}-12-31` }
+    const y = now.getFullYear() + offset
+    return { from: `${y}-01-01`, to: `${y}-12-31` }
   }
   if (period === 'custom' && customFrom && customTo) return { from: customFrom, to: customTo }
   return null
+}
+
+function getPeriodLabel(period: Period, offset: number): string {
+  if (offset === 0 || period === 'today' || period === 'custom') return ''
+  const now = new Date()
+  const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+  if (period === 'month') {
+    const d = new Date(now.getFullYear(), now.getMonth() + offset, 1)
+    return `${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+  }
+  if (period === 'week') {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const mon = new Date(now); mon.setDate(now.getDate() - now.getDay() + 1 + offset * 7)
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6)
+    return `${pad(mon.getDate())}/${pad(mon.getMonth()+1)} – ${pad(sun.getDate())}/${pad(sun.getMonth()+1)}`
+  }
+  if (period === 'year') return String(now.getFullYear() + offset)
+  return ''
 }
 
 const PERIOD_LABELS: Record<Period, string> = {
@@ -65,6 +84,7 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [userDeptIds, setUserDeptIds] = useState<string[] | null>(null)
   const [period, setPeriod] = useState<Period>('month')
+  const [periodOffset, setPeriodOffset] = useState(0)
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
   const [departments, setDepartments] = useState<Department[]>([])
@@ -137,7 +157,7 @@ export default function DashboardPage() {
   useEffect(() => { fetchActivities() }, [fetchActivities])
 
   const periodActivities = useMemo(() => {
-    const range = getPeriodRange(period, customFrom, customTo)
+    const range = getPeriodRange(period, customFrom, customTo, periodOffset)
     let list = allActivities
     // Apply department filter
     if (selectedDeptFilter !== 'all') {
@@ -150,7 +170,7 @@ export default function DashboardPage() {
       const d = date.slice(0, 10)
       return d >= range.from && d <= range.to
     })
-  }, [allActivities, period, customFrom, customTo, selectedDeptFilter])
+  }, [allActivities, period, customFrom, customTo, periodOffset, selectedDeptFilter])
 
   const stats: DashboardStats = useMemo(() => ({
     total: periodActivities.length,
@@ -217,13 +237,31 @@ export default function DashboardPage() {
           {/* Period filter */}
           <div className="flex items-center bg-white border border-gray-200 rounded-xl p-1 gap-0.5">
             {(['today','week','month','year','custom'] as Period[]).map(p => (
-              <button key={p} onClick={() => setPeriod(p)}
+              <button key={p} onClick={() => { setPeriod(p); setPeriodOffset(0) }}
                 className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
                 style={period === p ? { background: '#006494', color: 'white' } : { color: '#6B7280' }}>
                 {PERIOD_LABELS[p]}
               </button>
             ))}
           </div>
+          {/* Navigation arrows — only for navigable periods */}
+          {(period === 'week' || period === 'month' || period === 'year') && (
+            <div className="flex items-center bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <button onClick={() => setPeriodOffset(o => o - 1)}
+                className="px-2 py-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors border-r border-gray-200">
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="px-2.5 text-xs font-semibold text-gray-600 min-w-[90px] text-center">
+                {periodOffset === 0 ? PERIOD_LABELS[period] : getPeriodLabel(period, periodOffset)}
+              </span>
+              <button onClick={() => setPeriodOffset(o => Math.min(o + 1, 0))}
+                className={cn('px-2 py-1.5 transition-colors border-l border-gray-200',
+                  periodOffset < 0 ? 'text-gray-500 hover:bg-gray-50 hover:text-gray-800' : 'text-gray-300 cursor-not-allowed'
+                )}>
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
           {departments.length > 0 && (
             <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-1.5">
               <Layers className="h-3.5 w-3.5 text-purple-500 shrink-0" />
