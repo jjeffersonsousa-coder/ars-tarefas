@@ -82,8 +82,21 @@ export function ActivityCard({ activity, onUpdate, canEdit = false, compact = fa
         const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
         const nextDate = nextRecurrenceDate(activity)
         if (nextDate) {
-          // Use tomorrow if next date is today or in the past, then skip weekends
-          let effectiveDate = nextDate <= today ? tomorrow : nextDate
+          // For daily: if next date is in the past, use tomorrow. For weekly/monthly/yearly: always preserve the computed date (keep the original day).
+          const isDaily = activity.recurrence_type === 'daily'
+          let effectiveDate = (isDaily && nextDate <= today) ? tomorrow : nextDate
+          // If the preserved date is still in the past (e.g. monthly task very overdue), advance by one interval at a time until future
+          if (!isDaily && effectiveDate <= today) {
+            let candidate = activity
+            let candidateDate = effectiveDate
+            while (candidateDate <= today) {
+              const syntheticActivity = { ...candidate, due_date: candidateDate + 'T12:00:00' }
+              const advanced = nextRecurrenceDate(syntheticActivity as typeof activity)
+              if (!advanced || advanced === candidateDate) break
+              candidateDate = advanced
+            }
+            effectiveDate = candidateDate
+          }
           effectiveDate = skipToMonday(effectiveDate)
 
           const payload = buildNextOccurrence(activity, effectiveDate)

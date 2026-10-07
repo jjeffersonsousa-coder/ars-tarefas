@@ -13,7 +13,7 @@ import {
   STATUS_COLORS,
 } from '@/lib/types'
 import { formatDate, formatDateTime, getInitials, cn } from '@/lib/utils'
-import { Calendar, Clock, User, UserCheck, Edit, ArrowLeft } from 'lucide-react'
+import { Calendar, Clock, User, UserCheck, Edit, ArrowLeft, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 import { Checklist } from './checklist'
 import { ActivityHistoryLog } from './activity-history'
@@ -56,6 +56,12 @@ export function ActivityDetail({
               <Badge className={cn('border text-xs', STATUS_COLORS[activity.status])}>
                 {STATUS_LABELS[activity.status]}
               </Badge>
+              {activity.is_recurring && (
+                <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">
+                  <RefreshCw className="h-3 w-3" />
+                  {activity.recurrence_type === 'daily' ? 'Diária' : activity.recurrence_type === 'weekly' ? 'Semanal' : activity.recurrence_type === 'monthly' ? 'Mensal' : 'Anual'}
+                </span>
+              )}
             </div>
             <h1 className="text-2xl font-bold text-gray-900">{activity.title}</h1>
             {activity.context && (

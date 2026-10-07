@@ -74,10 +74,21 @@ export default function ActivitiesPage() {
 
       if (existing?.length) continue // series already has an active occurrence
 
-      // Generate next occurrence — if it would be in the past, use today; skip weekends to Monday
+      // Generate next occurrence — preserve original day for non-daily; advance until future if needed
       const nextDate = nextRecurrenceDate(act)
       if (!nextDate) continue
-      let effectiveDate = nextDate < today ? today : nextDate
+      const isDaily = act.recurrence_type === 'daily'
+      let effectiveDate = (isDaily && nextDate < today) ? today : nextDate
+      if (!isDaily && effectiveDate < today) {
+        let candidateDate = effectiveDate
+        while (candidateDate < today) {
+          const syn = { ...act, due_date: candidateDate + 'T12:00:00' }
+          const advanced = nextRecurrenceDate(syn as Activity)
+          if (!advanced || advanced === candidateDate) break
+          candidateDate = advanced
+        }
+        effectiveDate = candidateDate
+      }
       effectiveDate = skipToMonday(effectiveDate)
 
       const payload = buildNextOccurrence(act, effectiveDate)
