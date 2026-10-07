@@ -85,7 +85,14 @@ export default function AdminPage() {
     const res = await fetch('/api/admin/all-entities', {
       headers: { Authorization: `Bearer ${session?.access_token || ''}` }
     })
-    if (!res.ok) return
+    if (!res.ok) {
+      // Fallback: query directly via Supabase client (super_admin bypasses RLS via policy)
+      const { data: entitiesData } = await (supabase as any).from('entities').select('*').order('name')
+      const { data: usersData } = await (supabase as any).from('user_profiles').select('id, full_name, email, role, entity_id').order('full_name')
+      if (entitiesData) setEntities(entitiesData as Entity[])
+      if (usersData) setUsers(usersData as UserProfile[])
+      return
+    }
     const json = await res.json()
     setEntities(json.entities as Entity[])
     setUsers(json.users as UserProfile[])
