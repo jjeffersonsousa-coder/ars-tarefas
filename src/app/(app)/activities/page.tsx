@@ -188,11 +188,27 @@ export default function ActivitiesPage() {
 
   const canEdit = profile?.role === 'super_admin' || profile?.role === 'admin' || profile?.role === 'gestor' || profile?.role === 'editor'
 
+  function parseQuickInput(raw: string): { title: string; due_date: string | null } {
+    // Format: "15/10; Título" or "15/10/2026; Título"
+    const parts = raw.split(';')
+    if (parts.length < 2) return { title: raw.trim(), due_date: null }
+    const datePart = parts[0].trim()
+    const title = parts.slice(1).join(';').trim()
+    const dateMatch = datePart.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/)
+    if (!dateMatch) return { title: raw.trim(), due_date: null }
+    const day = dateMatch[1].padStart(2, '0')
+    const month = dateMatch[2].padStart(2, '0')
+    const year = dateMatch[3] ?? new Date().getFullYear().toString()
+    return { title, due_date: `${year}-${month}-${day}T09:00:00` }
+  }
+
   async function handleQuickCreate(e: React.KeyboardEvent) {
     if (e.key !== 'Enter' || !quickTitle.trim() || !profile || !effectiveEntityId) return
     setQuickSaving(true)
+    const { title, due_date } = parseQuickInput(quickTitle)
     const { error } = await (supabase as any).from('activities').insert({
-      title: quickTitle.trim(),
+      title,
+      due_date: due_date || undefined,
       entity_id: effectiveEntityId,
       department_id: profile.department_id || null,
       created_by: profile.id,
@@ -201,7 +217,7 @@ export default function ActivitiesPage() {
       updated_at: new Date().toISOString(),
     })
     if (!error) {
-      toast.success('Atividade criada!', { description: quickTitle.trim() })
+      toast.success('Atividade criada!', { description: due_date ? `${title} • ${due_date.split('T')[0].split('-').reverse().join('/')}` : title })
       setQuickTitle('')
       fetchActivities()
     } else {
@@ -256,7 +272,7 @@ export default function ActivitiesPage() {
             value={quickTitle}
             onChange={(e) => setQuickTitle(e.target.value)}
             onKeyDown={handleQuickCreate}
-            placeholder="Criação rápida — Digite o título e pressione Enter..."
+            placeholder="Criação rápida — Ex: 15/10; Buscar Materiais — pressione Enter..."
             className="border-0 shadow-none focus-visible:ring-0 p-0 text-sm"
             disabled={quickSaving}
           />
