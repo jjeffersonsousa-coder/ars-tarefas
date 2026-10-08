@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Pencil, Check, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface ChecklistProps {
@@ -22,6 +22,16 @@ export function Checklist({ activityId, items: initialItems, canEdit = false, on
   )
   const [newItemText, setNewItemText] = useState('')
   const [adding, setAdding] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingText, setEditingText] = useState('')
+
+  async function saveEdit(itemId: string) {
+    if (!editingText.trim()) { setEditingId(null); return }
+    await supabase.from('checklist_items').update({ text: editingText.trim() }).eq('id', itemId)
+    setItems(prev => prev.map(i => i.id === itemId ? { ...i, text: editingText.trim() } : i))
+    setEditingId(null)
+    onUpdate?.()
+  }
   const supabase = createClient()
 
   const completedCount = items.filter((i) => i.completed).length
@@ -88,24 +98,37 @@ export function Checklist({ activityId, items: initialItems, canEdit = false, on
           <div key={item.id} className="flex items-center gap-2 group">
             <Checkbox
               checked={item.completed}
-              onCheckedChange={() => canEdit ? toggleItem(item) : undefined}
-              disabled={!canEdit}
+              onCheckedChange={() => canEdit && editingId !== item.id ? toggleItem(item) : undefined}
+              disabled={!canEdit || editingId === item.id}
             />
-            <span
-              className={cn(
-                'flex-1 text-sm',
-                item.completed ? 'line-through text-gray-400' : 'text-gray-700'
-              )}
-            >
-              {item.text}
-            </span>
-            {canEdit && (
-              <button
-                onClick={() => deleteItem(item.id)}
-                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
+            {editingId === item.id ? (
+              <>
+                <Input
+                  autoFocus
+                  value={editingText}
+                  onChange={e => setEditingText(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') saveEdit(item.id); if (e.key === 'Escape') setEditingId(null) }}
+                  className="h-7 text-sm flex-1"
+                />
+                <button onClick={() => saveEdit(item.id)} className="text-green-600 hover:text-green-700"><Check className="h-3.5 w-3.5" /></button>
+                <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600"><X className="h-3.5 w-3.5" /></button>
+              </>
+            ) : (
+              <>
+                <span className={cn('flex-1 text-sm', item.completed ? 'line-through text-gray-400' : 'text-gray-700')}>
+                  {item.text}
+                </span>
+                {canEdit && (
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <button onClick={() => { setEditingId(item.id); setEditingText(item.text) }} className="text-gray-400 hover:text-blue-500">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button onClick={() => deleteItem(item.id)} className="text-gray-400 hover:text-red-500">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         ))}
