@@ -69,6 +69,7 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
   const [error, setError] = useState<string | null>(null)
   const [recurringModal, setRecurringModal] = useState<{ data: ActivityFormData } | null>(null)
   // Recurrence state
+  const [allDay, setAllDay] = useState(!activity?.due_date || !activity.due_date.includes('T') || activity.due_date.endsWith('T00:00:00'))
   const [isRecurring, setIsRecurring] = useState(activity?.is_recurring ?? false)
   const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>(activity?.recurrence_type ?? 'weekly')
   const [recurrenceInterval, setRecurrenceInterval] = useState(activity?.recurrence_interval ?? 1)
@@ -136,7 +137,7 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
         responsible_id: data.responsible_id || null,
         delegated_to_id: data.delegated_to_id || null,
         start_date: data.start_date ? data.start_date + 'T00:00:00' : null,
-        due_date: buildISOString(data.due_date || '', data.due_time || ''),
+        due_date: data.due_date ? (allDay ? data.due_date + 'T00:00:00' : buildISOString(data.due_date, data.due_time || '')) : null,
         follow_up_date: buildISOString(data.follow_up_date || '', data.follow_up_time || ''),
         updated_at: new Date().toISOString(),
         due_time: undefined,
@@ -302,16 +303,31 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
         </div>
 
         {/* Start date + Due date side by side */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Data de Início</Label>
-            <Input type="date" {...register('start_date')} className="mt-1.5 h-11 rounded-xl w-full" />
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Datas</Label>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <span className="text-xs text-gray-500 font-medium">Dia inteiro</span>
+              <button
+                type="button"
+                onClick={() => setAllDay(v => !v)}
+                className={cn('relative w-9 h-5 rounded-full transition-colors', allDay ? 'bg-blue-600' : 'bg-gray-300')}
+              >
+                <span className={cn('absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform', allDay ? 'translate-x-4' : 'translate-x-0')} />
+              </button>
+            </label>
           </div>
-          <div>
-            <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Data e Horário de Término</Label>
-            <div className="flex gap-2 mt-1.5">
-              <Input type="date" {...register('due_date')} className="flex-1 h-11 rounded-xl" />
-              <Input type="time" {...register('due_time')} className="w-28 h-11 rounded-xl" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-xs text-gray-500">Início</Label>
+              <Input type="date" {...register('start_date')} className="mt-1 h-11 rounded-xl w-full" />
+            </div>
+            <div>
+              <Label className="text-xs text-gray-500">Término</Label>
+              <div className="flex gap-2 mt-1">
+                <Input type="date" {...register('due_date')} className="flex-1 h-11 rounded-xl" />
+                {!allDay && <Input type="time" {...register('due_time')} className="w-28 h-11 rounded-xl" />}
+              </div>
             </div>
           </div>
         </div>
