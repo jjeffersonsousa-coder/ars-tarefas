@@ -71,11 +71,20 @@ export default function CalendarPage() {
     const map: Record<number, Activity[]> = {}
     for (const a of activities) {
       if (!a.due_date) continue
-      const d = new Date(a.due_date)
-      if (d.getFullYear() === year && d.getMonth() === month) {
-        const day = d.getDate()
+      const endDate = new Date(a.due_date)
+      const startDate = a.start_date ? new Date(a.start_date) : endDate
+      // Clamp to visible month
+      const monthStart = new Date(year, month, 1)
+      const monthEnd = new Date(year, month + 1, 0)
+      const from = startDate < monthStart ? monthStart : startDate
+      const to = endDate > monthEnd ? monthEnd : endDate
+      if (from > monthEnd || to < monthStart) continue
+      const cur = new Date(from)
+      while (cur <= to) {
+        const day = cur.getDate()
         if (!map[day]) map[day] = []
-        map[day].push(a)
+        if (!map[day].find(x => x.id === a.id)) map[day].push(a)
+        cur.setDate(cur.getDate() + 1)
       }
     }
     return map
@@ -174,6 +183,7 @@ export default function CalendarPage() {
                               'text-[10px] leading-tight px-1.5 py-0.5 rounded font-medium truncate cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1',
                               a.status === 'concluida' ? 'bg-emerald-100 text-emerald-700' :
                               a.status === 'cancelada' ? 'bg-gray-100 text-gray-500 line-through' :
+                              a.start_date ? 'bg-violet-100 text-violet-800' :
                               hasOverdue ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-800'
                             )}
                           >
