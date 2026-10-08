@@ -120,14 +120,14 @@ export default function CalendarPage() {
   while (cells.length % 7 !== 0) cells.push(null)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <CalendarDays className="h-6 w-6 text-blue-700" />
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <CalendarDays className="h-5 w-5 sm:h-6 sm:w-6 text-blue-700 shrink-0" />
             Calendário
           </h1>
-          <p className="text-gray-500 text-sm mt-0.5">Atividades organizadas por data de vencimento</p>
+          <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Atividades por data de vencimento</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {departments.length > 0 && (
@@ -152,28 +152,28 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         {/* Calendar grid */}
         <div className="xl:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-blue-50">
-            <button onClick={prevMonth} className="p-2 rounded-xl hover:bg-white/80 transition-colors">
-              <ChevronLeft className="h-5 w-5 text-gray-600" />
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-blue-50">
+            <button onClick={prevMonth} className="p-1.5 sm:p-2 rounded-xl hover:bg-white/80 transition-colors">
+              <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
             </button>
             <div className="text-center">
-              <h2 className="text-lg font-bold text-gray-900">{MONTHS[month]}</h2>
-              <p className="text-sm text-gray-500">{year}</p>
+              <h2 className="text-base sm:text-lg font-bold text-gray-900">{MONTHS[month]}</h2>
+              <p className="text-xs sm:text-sm text-gray-500">{year}</p>
             </div>
-            <button onClick={nextMonth} className="p-2 rounded-xl hover:bg-white/80 transition-colors">
-              <ChevronRight className="h-5 w-5 text-gray-600" />
+            <button onClick={nextMonth} className="p-1.5 sm:p-2 rounded-xl hover:bg-white/80 transition-colors">
+              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
             </button>
           </div>
 
           {/* Weekday headers */}
           <div className="grid grid-cols-7 border-b border-gray-100">
             {WEEKDAYS.map((d) => (
-              <div key={d} className="py-3 text-center text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                {d}
+              <div key={d} className="py-2 sm:py-3 text-center text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                {d.slice(0, 3)}
               </div>
             ))}
           </div>
@@ -193,7 +193,7 @@ export default function CalendarPage() {
                   key={idx}
                   onClick={() => day && setSelectedDay(isSelected ? null : day)}
                   className={cn(
-                    'min-h-[90px] p-2 border-b border-r border-gray-50 last:border-r-0',
+                    'min-h-[56px] sm:min-h-[90px] p-1 sm:p-2 border-b border-r border-gray-50 last:border-r-0',
                     idx % 7 === 6 && 'border-r-0',
                     day ? 'cursor-pointer hover:bg-blue-50/50 transition-colors' : 'bg-gray-50/30',
                     isSelected && 'bg-blue-50 ring-2 ring-inset ring-blue-300',
@@ -202,32 +202,32 @@ export default function CalendarPage() {
                   {day && (
                     <>
                       <div className={cn(
-                        'text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full mb-1.5',
+                        'text-xs sm:text-sm font-semibold w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full mb-1',
                         isTod ? 'bg-blue-700 text-white' : 'text-gray-700',
                         hasOverdue && !isTod && 'text-red-600',
                       )}>
                         {day}
                       </div>
                       <div className="space-y-0.5">
-                        {dayActivities.slice(0, 3).map((a) => (
+                        {dayActivities.slice(0, 2).map((a) => (
                           <div
                             key={a.id}
                             onClick={(e) => { e.stopPropagation(); router.push(`/activities/${a.id}`) }}
                             className={cn(
-                              'text-[10px] leading-tight px-1.5 py-0.5 rounded font-medium truncate cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1',
+                              'text-[9px] sm:text-[10px] leading-tight px-1 sm:px-1.5 py-0.5 rounded font-medium truncate cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-0.5 sm:gap-1',
                               a.status === 'concluida' ? 'bg-emerald-100 text-emerald-700' :
                               a.status === 'cancelada' ? 'bg-gray-100 text-gray-500 line-through' :
                               a.start_date ? 'bg-violet-100 text-violet-800' :
                               hasOverdue ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-800'
                             )}
                           >
-                            <span className={cn('inline-block w-1.5 h-1.5 rounded-full flex-shrink-0', PRIORITY_DOT[a.priority])} />
+                            <span className={cn('hidden sm:inline-block w-1.5 h-1.5 rounded-full flex-shrink-0', PRIORITY_DOT[a.priority])} />
                             <span className="truncate">{a.title}</span>
                           </div>
                         ))}
-                        {dayActivities.length > 3 && (
-                          <div className="text-[10px] text-gray-400 font-medium px-1">
-                            +{dayActivities.length - 3} mais
+                        {dayActivities.length > 2 && (
+                          <div className="text-[9px] sm:text-[10px] text-gray-400 font-medium px-1">
+                            +{dayActivities.length - 2}
                           </div>
                         )}
                       </div>
@@ -239,7 +239,7 @@ export default function CalendarPage() {
           </div>
 
           {/* Legend */}
-          <div className="px-6 py-3 border-t border-gray-100 flex items-center gap-5 flex-wrap">
+          <div className="px-4 sm:px-6 py-3 border-t border-gray-100 flex items-center gap-3 sm:gap-5 flex-wrap">
             <span className="text-xs text-gray-400 font-medium">Prioridade:</span>
             {Object.entries(PRIORITY_DOT).map(([k, cls]) => (
               <span key={k} className="flex items-center gap-1.5 text-xs text-gray-600">

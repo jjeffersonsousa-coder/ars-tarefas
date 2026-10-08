@@ -238,33 +238,33 @@ export default function ActivitiesPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Atividades</h1>
-          <p className="text-gray-500 text-sm mt-0.5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Atividades</h1>
+          <p className="text-gray-500 text-xs sm:text-sm mt-0.5">
             {loading ? '...' : `${activities.length} atividade${activities.length !== 1 ? 's' : ''} encontrada${activities.length !== 1 ? 's' : ''}`}
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" className="rounded-xl gap-2 border-green-200 text-green-700 hover:bg-green-50"
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <Button variant="outline" size="sm" className="rounded-xl gap-1.5 border-green-200 text-green-700 hover:bg-green-50 hidden sm:flex"
             onClick={() => import('@/lib/export').then(m => m.exportToExcel(activities))}>
-            <FileSpreadsheet className="h-3.5 w-3.5" />Excel
+            <FileSpreadsheet className="h-3.5 w-3.5" /><span className="hidden md:inline">Excel</span>
           </Button>
-          <Button variant="outline" size="sm" className="rounded-xl gap-2 border-red-200 text-red-700 hover:bg-red-50"
+          <Button variant="outline" size="sm" className="rounded-xl gap-1.5 border-red-200 text-red-700 hover:bg-red-50 hidden sm:flex"
             onClick={() => import('@/lib/export').then(m => m.exportToPDF(activities))}>
-            <FileText className="h-3.5 w-3.5" />PDF
+            <FileText className="h-3.5 w-3.5" /><span className="hidden md:inline">PDF</span>
           </Button>
           {canEdit && (
-            <Button asChild variant="outline" size="sm" className="rounded-xl gap-2">
+            <Button asChild variant="outline" size="sm" className="rounded-xl gap-1.5 hidden sm:flex">
               <Link href="/activities/import">
                 <Upload className="h-3.5 w-3.5" />
-                Importar
+                <span className="hidden md:inline">Importar</span>
               </Link>
             </Button>
           )}
           {canEdit && (
-            <Button asChild className="rounded-xl" style={{ background: 'linear-gradient(135deg, #006494, #13293D)' }}>
-              <Link href="/activities/new"><Plus className="h-4 w-4 mr-2" />Nova Atividade</Link>
+            <Button asChild size="sm" className="rounded-xl" style={{ background: 'linear-gradient(135deg, #006494, #13293D)' }}>
+              <Link href="/activities/new"><Plus className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Nova Atividade</span></Link>
             </Button>
           )}
         </div>
@@ -288,87 +288,88 @@ export default function ActivitiesPage() {
       )}
 
       {/* Toolbar */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex flex-col gap-2">
         <ActivityFiltersBar filters={filters} onChange={setFilters} entityId={profile?.entity_id || undefined} />
-        {departments.length > 0 && (
-          <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-1.5">
-            <Layers className="h-3.5 w-3.5 text-purple-500 shrink-0" />
-            <Select value={selectedDept} onValueChange={setSelectedDept}>
-              <SelectTrigger className="border-0 shadow-none h-auto p-0 text-xs font-medium text-gray-600 w-36 focus:ring-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os departamentos</SelectItem>
-                {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {departments.length > 0 && (
+            <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-1.5">
+              <Layers className="h-3.5 w-3.5 text-purple-500 shrink-0" />
+              <Select value={selectedDept} onValueChange={setSelectedDept}>
+                <SelectTrigger className="border-0 shadow-none h-auto p-0 text-xs font-medium text-gray-600 w-32 focus:ring-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os departamentos</SelectItem>
+                  {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
-        {/* Show/hide closed toggle */}
-        {!filters.status?.length && (
-          <button
-            onClick={() => setShowClosed(v => !v)}
-            className={cn(
-              'flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl border transition-colors shrink-0',
-              showClosed
-                ? 'bg-gray-100 border-gray-300 text-gray-700'
-                : 'bg-white border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            )}
-          >
-            {showClosed ? 'Ocultar encerradas' : (
-              <>
-                Mostrar encerradas
-                {closedCount > 0 && (
-                  <span className="bg-gray-200 text-gray-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-                    {closedCount}
-                  </span>
-                )}
-              </>
-            )}
-          </button>
-        )}
+          {!filters.status?.length && (
+            <button
+              onClick={() => setShowClosed(v => !v)}
+              className={cn(
+                'flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl border transition-colors shrink-0',
+                showClosed
+                  ? 'bg-gray-100 border-gray-300 text-gray-700'
+                  : 'bg-white border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              )}
+            >
+              {showClosed ? 'Ocultar encerradas' : (
+                <>
+                  Mostrar encerradas
+                  {closedCount > 0 && (
+                    <span className="bg-gray-200 text-gray-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                      {closedCount}
+                    </span>
+                  )}
+                </>
+              )}
+            </button>
+          )}
 
-        <div className="flex items-center gap-1.5 ml-auto shrink-0">
-          {/* Sort */}
-          <div className="flex items-center gap-1.5 bg-white rounded-xl border border-gray-200 px-3 py-2">
-            <ArrowUpDown className="h-3.5 w-3.5 text-gray-400" />
-            <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
-              <SelectTrigger className="border-0 shadow-none h-auto p-0 text-xs font-medium text-gray-600 w-28 focus:ring-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="created_at">Mais recentes</SelectItem>
-                <SelectItem value="due_date">Vencimento</SelectItem>
-                <SelectItem value="priority">Prioridade</SelectItem>
-                <SelectItem value="title">Título A-Z</SelectItem>
-              </SelectContent>
-            </Select>
-            <button
-              onClick={() => setSortAsc(v => !v)}
-              className="text-xs text-gray-400 hover:text-gray-700 font-mono"
-              title={sortAsc ? 'Crescente' : 'Decrescente'}
-            >
-              {sortAsc ? '↑' : '↓'}
-            </button>
-          </div>
+          <div className="flex items-center gap-1.5 ml-auto shrink-0">
+            {/* Sort */}
+            <div className="flex items-center gap-1.5 bg-white rounded-xl border border-gray-200 px-2 sm:px-3 py-2">
+              <ArrowUpDown className="h-3.5 w-3.5 text-gray-400" />
+              <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
+                <SelectTrigger className="border-0 shadow-none h-auto p-0 text-xs font-medium text-gray-600 w-24 sm:w-28 focus:ring-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="created_at">Mais recentes</SelectItem>
+                  <SelectItem value="due_date">Vencimento</SelectItem>
+                  <SelectItem value="priority">Prioridade</SelectItem>
+                  <SelectItem value="title">Título A-Z</SelectItem>
+                </SelectContent>
+              </Select>
+              <button
+                onClick={() => setSortAsc(v => !v)}
+                className="text-xs text-gray-400 hover:text-gray-700 font-mono"
+                title={sortAsc ? 'Crescente' : 'Decrescente'}
+              >
+                {sortAsc ? '↑' : '↓'}
+              </button>
+            </div>
 
-          {/* View toggle */}
-          <div className="flex bg-white rounded-xl border border-gray-200 p-1">
-            <button
-              onClick={() => setView('list')}
-              className={cn('p-1.5 rounded-lg transition-colors', view === 'list' ? 'bg-blue-100 text-blue-800' : 'text-gray-400 hover:text-gray-600')}
-              title="Lista"
-            >
-              <LayoutList className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setView('kanban')}
-              className={cn('p-1.5 rounded-lg transition-colors', view === 'kanban' ? 'bg-blue-100 text-blue-800' : 'text-gray-400 hover:text-gray-600')}
-              title="Kanban"
-            >
-              <KanbanSquare className="h-4 w-4" />
-            </button>
+            {/* View toggle */}
+            <div className="flex bg-white rounded-xl border border-gray-200 p-1">
+              <button
+                onClick={() => setView('list')}
+                className={cn('p-1.5 rounded-lg transition-colors', view === 'list' ? 'bg-blue-100 text-blue-800' : 'text-gray-400 hover:text-gray-600')}
+                title="Lista"
+              >
+                <LayoutList className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setView('kanban')}
+                className={cn('p-1.5 rounded-lg transition-colors', view === 'kanban' ? 'bg-blue-100 text-blue-800' : 'text-gray-400 hover:text-gray-600')}
+                title="Kanban"
+              >
+                <KanbanSquare className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

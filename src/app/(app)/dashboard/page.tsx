@@ -227,31 +227,43 @@ export default function DashboardPage() {
   const hasFilters = activeStatFilter || Object.values(filters).some(v => v && (Array.isArray(v) ? v.length > 0 : true))
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Visão geral das suas atividades</p>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Visão geral das suas atividades</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={fetchActivities} className="rounded-xl gap-2">
+              <RefreshCw className="h-3.5 w-3.5" />
+            </Button>
+            {canEdit && (
+              <Button asChild size="sm" className="rounded-xl" style={{ background: 'linear-gradient(135deg, #006494, #13293D)' }}>
+                <Link href="/activities/new"><Plus className="h-4 w-4 mr-1 sm:mr-2" /><span className="hidden sm:inline">Nova Atividade</span><span className="sm:hidden">Nova</span></Link>
+              </Button>
+            )}
+          </div>
         </div>
+
+        {/* Period filter row */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Period filter */}
           <div className="flex items-center bg-white border border-gray-200 rounded-xl p-1 gap-0.5">
             {(['today','week','month','year','custom'] as Period[]).map(p => (
               <button key={p} onClick={() => { setPeriod(p); setPeriodOffset(0) }}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                className="px-2 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
                 style={period === p ? { background: '#006494', color: 'white' } : { color: '#6B7280' }}>
                 {PERIOD_LABELS[p]}
               </button>
             ))}
           </div>
-          {/* Navigation arrows — only for navigable periods */}
           {(period === 'week' || period === 'month' || period === 'year') && (
             <div className="flex items-center bg-white border border-gray-200 rounded-xl overflow-hidden">
               <button onClick={() => setPeriodOffset(o => o - 1)}
                 className="px-2 py-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors border-r border-gray-200">
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <span className="px-2.5 text-xs font-semibold text-gray-600 min-w-[90px] text-center">
+              <span className="px-2 text-xs font-semibold text-gray-600 min-w-[70px] sm:min-w-[90px] text-center">
                 {periodOffset === 0 ? PERIOD_LABELS[period] : getPeriodLabel(period, periodOffset)}
               </span>
               <button onClick={() => setPeriodOffset(o => Math.min(o + 1, 0))}
@@ -266,7 +278,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-1.5">
               <Layers className="h-3.5 w-3.5 text-purple-500 shrink-0" />
               <Select value={selectedDeptFilter} onValueChange={setSelectedDeptFilter}>
-                <SelectTrigger className="border-0 shadow-none h-auto p-0 text-xs font-medium text-gray-600 w-36 focus:ring-0">
+                <SelectTrigger className="border-0 shadow-none h-auto p-0 text-xs font-medium text-gray-600 w-32 focus:ring-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -276,28 +288,24 @@ export default function DashboardPage() {
               </Select>
             </div>
           )}
-          <Button variant="outline" size="sm" onClick={fetchActivities} className="rounded-xl gap-2">
-            <RefreshCw className="h-3.5 w-3.5" />
-          </Button>
-          {canEdit && (
-            <Button asChild className="rounded-xl" style={{ background: 'linear-gradient(135deg, #006494, #13293D)' }}>
-              <Link href="/activities/new"><Plus className="h-4 w-4 mr-2" />Nova Atividade</Link>
-            </Button>
-          )}
         </div>
       </div>
 
       {/* Custom date range */}
       {period === 'custom' && (
-        <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3">
-          <CalendarDays className="h-4 w-4 text-gray-400 shrink-0" />
-          <span className="text-sm text-gray-500 shrink-0">De</span>
-          <Input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="h-8 rounded-lg w-36 text-sm" />
-          <span className="text-sm text-gray-500 shrink-0">até</span>
-          <Input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="h-8 rounded-lg w-36 text-sm" />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-2 flex-1">
+            <CalendarDays className="h-4 w-4 text-gray-400 shrink-0" />
+            <span className="text-sm text-gray-500 shrink-0">De</span>
+            <Input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="h-8 rounded-lg flex-1 text-sm" />
+          </div>
+          <div className="flex items-center gap-2 flex-1">
+            <span className="text-sm text-gray-500 shrink-0">até</span>
+            <Input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="h-8 rounded-lg flex-1 text-sm" />
+          </div>
           {customFrom && customTo && (
-            <span className="text-xs text-gray-400 ml-auto">
-              {periodActivities.length} atividade{periodActivities.length !== 1 ? 's' : ''} no período
+            <span className="text-xs text-gray-400">
+              {periodActivities.length} atividade{periodActivities.length !== 1 ? 's' : ''}
             </span>
           )}
         </div>
