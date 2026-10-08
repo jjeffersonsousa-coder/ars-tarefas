@@ -3,11 +3,12 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Activity, UserProfile, PRIORITY_COLORS, STATUS_COLORS, STATUS_LABELS } from '@/lib/types'
+import { Activity, UserProfile, Department, PRIORITY_COLORS, STATUS_COLORS, STATUS_LABELS } from '@/lib/types'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, Plus, CalendarDays, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, CalendarDays, X, Layers } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
@@ -24,6 +25,8 @@ export default function CalendarPage() {
   const supabase = createClient()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [activities, setActivities] = useState<Activity[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [selectedDept, setSelectedDept] = useState<string>('all')
   const [loading, setLoading] = useState(true)
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
@@ -48,6 +51,12 @@ export default function CalendarPage() {
           tags: ((a.activity_tags as Array<{ tags: unknown }>) || []).map((at) => at.tags).filter(Boolean),
         })) as Activity[])
       }
+      // Load departments
+      if (p?.entity_id) {
+        const { data: depts } = await (supabase as any)
+          .from('departments').select('*').eq('entity_id', p.entity_id).order('name')
+        setDepartments(depts ?? [])
+      }
       setLoading(false)
     }
     init()
@@ -67,6 +76,10 @@ export default function CalendarPage() {
   const firstDay = new Date(year, month, 1).getDay()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
+  const filteredActivities = useMemo(() =>
+    selectedDept === 'all' ? activities : activities.filter(a => a.department_id === selectedDept),
+  [activities, selectedDept])
+
   const activitiesByDay = useMemo(() => {
     // Parse only the date portion to avoid timezone shifts
     function parseLocalDate(iso: string) {
@@ -74,7 +87,7 @@ export default function CalendarPage() {
       return new Date(y, m - 1, d)
     }
     const map: Record<number, Activity[]> = {}
-    for (const a of activities) {
+    for (const a of filteredActivities) {
       if (!a.due_date) continue
       const endDate = parseLocalDate(a.due_date)
       const startDate = a.start_date ? parseLocalDate(a.start_date) : endDate
@@ -93,7 +106,7 @@ export default function CalendarPage() {
       }
     }
     return map
-  }, [activities, year, month])
+  }, [filteredActivities, year, month])
 
   const selectedActivities = selectedDay ? (activitiesByDay[selectedDay] || []) : []
 
@@ -116,11 +129,27 @@ export default function CalendarPage() {
           </h1>
           <p className="text-gray-500 text-sm mt-0.5">Atividades organizadas por data de vencimento</p>
         </div>
-        {canEdit && (
-          <Button asChild className="bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-800 hover:to-blue-800 shadow-md shadow-blue-200 rounded-xl">
-            <Link href="/activities/new"><Plus className="h-4 w-4 mr-2" />Nova Atividade</Link>
-          </Button>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {departments.length > 0 && (
+            <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-1.5">
+              <Layers className="h-3.5 w-3.5 text-purple-500 shrink-0" />
+              <Select value={selectedDept} onValueChange={setSelectedDept}>
+                <SelectTrigger className="border-0 shadow-none h-auto p-0 text-xs font-medium text-gray-600 w-36 focus:ring-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os departamentos</SelectItem>
+                  {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {canEdit && (
+            <Button asChild className="bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-800 hover:to-blue-800 shadow-md shadow-blue-200 rounded-xl">
+              <Link href="/activities/new"><Plus className="h-4 w-4 mr-2" />Nova Atividade</Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">

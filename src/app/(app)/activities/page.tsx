@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Activity, ActivityFilters } from '@/lib/types'
+import { Activity, ActivityFilters, Department } from '@/lib/types'
 import { ActivityFiltersBar } from '@/components/activities/activity-filters'
 import { ActivityCard } from '@/components/activities/activity-card'
 import { ActivityKanban } from '@/components/activities/activity-kanban'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Plus, LayoutList, KanbanSquare, ArrowUpDown, Upload, Loader2, FileSpreadsheet, FileText } from 'lucide-react'
+import { Plus, LayoutList, KanbanSquare, ArrowUpDown, Upload, Loader2, FileSpreadsheet, FileText, Layers } from 'lucide-react'
 import Link from 'next/link'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
@@ -35,6 +35,8 @@ export default function ActivitiesPage() {
   const [quickTitle, setQuickTitle] = useState('')
   const [quickSaving, setQuickSaving] = useState(false)
   const quickRef = useRef<HTMLInputElement>(null)
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [selectedDept, setSelectedDept] = useState<string>('all')
   const supabase = createClient()
 
   // On load: recover any recurring activities that were concluded but whose next
@@ -107,7 +109,11 @@ export default function ActivitiesPage() {
   }, [supabase])
 
   useEffect(() => {
-    if (effectiveEntityId) recoverMissingRecurrences(effectiveEntityId)
+    if (effectiveEntityId) {
+      recoverMissingRecurrences(effectiveEntityId);
+      (supabase as any).from('departments').select('*').eq('entity_id', effectiveEntityId).order('name')
+        .then(({ data }: { data: Department[] | null }) => setDepartments(data ?? []))
+    }
   }, [effectiveEntityId, recoverMissingRecurrences])
 
   const fetchActivities = useCallback(async () => {
@@ -124,6 +130,7 @@ export default function ActivitiesPage() {
       query = query.eq('id', 'no-match')
     }
 
+    if (selectedDept !== 'all') query = query.eq('department_id', selectedDept)
     if (filters.search) query = query.ilike('title', `%${filters.search}%`)
     if (filters.context) query = query.ilike('context', `%${filters.context}%`)
     if (filters.responsible_id) query = query.eq('responsible_id', filters.responsible_id)
@@ -182,7 +189,7 @@ export default function ActivitiesPage() {
       setActivities(mapped)
     }
     setLoading(false)
-  }, [filters, sortKey, sortAsc, showClosed, userDeptIds, profile, effectiveEntityId])
+  }, [filters, sortKey, sortAsc, showClosed, selectedDept, userDeptIds, profile, effectiveEntityId])
 
   useEffect(() => { fetchActivities() }, [fetchActivities])
 
@@ -283,6 +290,20 @@ export default function ActivitiesPage() {
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
         <ActivityFiltersBar filters={filters} onChange={setFilters} entityId={profile?.entity_id || undefined} />
+        {departments.length > 0 && (
+          <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-1.5">
+            <Layers className="h-3.5 w-3.5 text-purple-500 shrink-0" />
+            <Select value={selectedDept} onValueChange={setSelectedDept}>
+              <SelectTrigger className="border-0 shadow-none h-auto p-0 text-xs font-medium text-gray-600 w-36 focus:ring-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os departamentos</SelectItem>
+                {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {/* Show/hide closed toggle */}
         {!filters.status?.length && (
