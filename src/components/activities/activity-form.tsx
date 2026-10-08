@@ -26,6 +26,7 @@ const activitySchema = z.object({
   priority: z.enum(['urgente', 'alta', 'media', 'baixa']),
   status: z.enum(['pendente', 'em_andamento', 'aguardando', 'concluida', 'cancelada']),
   rich_notes: z.string().optional(),
+  start_date: z.string().optional(),
   due_date: z.string().optional(),
   due_time: z.string().optional(),
   follow_up_date: z.string().optional(),
@@ -79,6 +80,7 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
 
   const dueDT = toLocalDatetime(activity?.due_date)
   const followDT = toLocalDatetime(activity?.follow_up_date)
+  const startDT = toLocalDatetime(activity?.start_date)
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<ActivityFormData>({
     resolver: zodResolver(activitySchema),
@@ -91,6 +93,7 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
       priority: activity?.priority || 'media',
       status: activity?.status || 'pendente',
       rich_notes: activity?.rich_notes || '',
+      start_date: startDT.date,
       due_date: dueDT.date,
       due_time: dueDT.time,
       follow_up_date: followDT.date,
@@ -132,6 +135,7 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
         entity_id: entityId,
         responsible_id: data.responsible_id || null,
         delegated_to_id: data.delegated_to_id || null,
+        start_date: data.start_date ? data.start_date + 'T00:00:00' : null,
         due_date: buildISOString(data.due_date || '', data.due_time || ''),
         follow_up_date: buildISOString(data.follow_up_date || '', data.follow_up_time || ''),
         updated_at: new Date().toISOString(),
@@ -151,7 +155,7 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
           if (oldVal !== newVal) changes.push({ field, old_value: oldVal || null, new_value: newVal || null })
         }
         const recurrencePayload = isRecurring ? { is_recurring: true, recurrence_type: recurrenceType, recurrence_interval: recurrenceInterval, recurrence_days: recurrenceDays, recurrence_end_date: recurrenceEndDate || null, weekend_handling: weekendHandling } : { is_recurring: false, recurrence_type: null, recurrence_interval: null, recurrence_days: null, recurrence_end_date: null, weekend_handling: null }
-        const updatePayload = { title: payload.title, description: payload.description, context: payload.context, responsible_id: payload.responsible_id, delegated_to_id: payload.delegated_to_id, priority: payload.priority, status: payload.status, rich_notes: payload.rich_notes, due_date: payload.due_date, follow_up_date: payload.follow_up_date, updated_at: payload.updated_at, department_id: selectedDeptId || null, ...recurrencePayload }
+        const updatePayload = { title: payload.title, description: payload.description, context: payload.context, responsible_id: payload.responsible_id, delegated_to_id: payload.delegated_to_id, priority: payload.priority, status: payload.status, rich_notes: payload.rich_notes, start_date: payload.start_date, due_date: payload.due_date, follow_up_date: payload.follow_up_date, updated_at: payload.updated_at, department_id: selectedDeptId || null, ...recurrencePayload }
         const { error: updateError } = await (db as any).from('activities').update(updatePayload).eq('id', activity.id)
         if (updateError) throw updateError
         for (const change of changes) {
@@ -171,7 +175,7 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
             .neq('id', activity.id)
         }
       } else {
-        const insertPayload = { entity_id: payload.entity_id, department_id: selectedDeptId || userDepartmentId || null, title: payload.title, description: payload.description, context: payload.context, responsible_id: payload.responsible_id, delegated_to_id: payload.delegated_to_id, priority: payload.priority, status: payload.status, rich_notes: payload.rich_notes, due_date: payload.due_date, follow_up_date: payload.follow_up_date, created_by: userId, updated_at: payload.updated_at }
+        const insertPayload = { entity_id: payload.entity_id, department_id: selectedDeptId || userDepartmentId || null, title: payload.title, description: payload.description, context: payload.context, responsible_id: payload.responsible_id, delegated_to_id: payload.delegated_to_id, priority: payload.priority, status: payload.status, rich_notes: payload.rich_notes, start_date: payload.start_date, due_date: payload.due_date, follow_up_date: payload.follow_up_date, created_by: userId, updated_at: payload.updated_at }
         const recurrencePayload2 = isRecurring ? { is_recurring: true, recurrence_type: recurrenceType, recurrence_interval: recurrenceInterval, recurrence_days: recurrenceDays, recurrence_end_date: recurrenceEndDate || null, weekend_handling: weekendHandling } : { is_recurring: false }
         Object.assign(insertPayload, recurrencePayload2)
         const { data: created, error: insertError } = await (db as any).from('activities').insert(insertPayload).select().single()
@@ -297,12 +301,18 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
           </div>
         </div>
 
-        {/* Due date with time */}
-        <div>
-          <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Data e Horário de Vencimento</Label>
-          <div className="flex gap-2 mt-1.5">
-            <Input type="date" {...register('due_date')} className="flex-1 h-11 rounded-xl" />
-            <Input type="time" {...register('due_time')} className="w-32 h-11 rounded-xl" />
+        {/* Start date + Due date side by side */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Data de Início</Label>
+            <Input type="date" {...register('start_date')} className="mt-1.5 h-11 rounded-xl w-full" />
+          </div>
+          <div>
+            <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Data e Horário de Término</Label>
+            <div className="flex gap-2 mt-1.5">
+              <Input type="date" {...register('due_date')} className="flex-1 h-11 rounded-xl" />
+              <Input type="time" {...register('due_time')} className="w-28 h-11 rounded-xl" />
+            </div>
           </div>
         </div>
 

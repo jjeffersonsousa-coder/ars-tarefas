@@ -85,9 +85,17 @@ export function ActivityDetail({
         <Separator className="my-4" />
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {activity.start_date && (
+            <div>
+              <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                <Calendar className="h-3 w-3" /> Início
+              </p>
+              <p className="text-sm font-medium text-gray-800">{formatDate(activity.start_date)}</p>
+            </div>
+          )}
           <div>
             <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
-              <Calendar className="h-3 w-3" /> Vencimento
+              <Calendar className="h-3 w-3" /> {activity.start_date ? 'Término' : 'Vencimento'}
             </p>
             <p className="text-sm font-medium text-gray-800">
               {formatDate(activity.due_date)}

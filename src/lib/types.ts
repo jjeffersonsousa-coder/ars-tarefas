@@ -59,6 +59,7 @@ export interface Activity {
   priority: Priority
   status: ActivityStatus
   rich_notes?: string | null
+  start_date?: string | null
   due_date?: string | null
   follow_up_date?: string | null
   created_by?: string | null
