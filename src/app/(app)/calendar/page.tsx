@@ -68,11 +68,16 @@ export default function CalendarPage() {
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
   const activitiesByDay = useMemo(() => {
+    // Parse only the date portion to avoid timezone shifts
+    function parseLocalDate(iso: string) {
+      const [y, m, d] = iso.split('T')[0].split('-').map(Number)
+      return new Date(y, m - 1, d)
+    }
     const map: Record<number, Activity[]> = {}
     for (const a of activities) {
       if (!a.due_date) continue
-      const endDate = new Date(a.due_date)
-      const startDate = a.start_date ? new Date(a.start_date) : endDate
+      const endDate = parseLocalDate(a.due_date)
+      const startDate = a.start_date ? parseLocalDate(a.start_date) : endDate
       // Clamp to visible month
       const monthStart = new Date(year, month, 1)
       const monthEnd = new Date(year, month + 1, 0)
