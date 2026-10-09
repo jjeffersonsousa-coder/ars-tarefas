@@ -19,14 +19,22 @@ interface ChecklistProps {
 function parseChecklistInput(raw: string): { text: string; due_date: string } {
   const parts = raw.split(';')
   if (parts.length < 2) return { text: raw.trim(), due_date: '' }
-  const text = parts[0].trim()
-  const datePart = parts.slice(1).join(';').trim()
-  const match = datePart.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/)
-  if (!match) return { text: raw.trim(), due_date: '' }
-  const day = match[1].padStart(2, '0')
-  const month = match[2].padStart(2, '0')
-  const year = match[3] ?? new Date().getFullYear().toString()
-  return { text, due_date: `${year}-${month}-${day}` }
+
+  function toIso(part: string) {
+    const m = part.trim().match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/)
+    if (!m) return ''
+    return `${m[3] ?? new Date().getFullYear()}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`
+  }
+
+  // Try "data; texto"
+  const first = toIso(parts[0])
+  if (first) return { text: parts.slice(1).join(';').trim(), due_date: first }
+
+  // Try "texto; data"
+  const last = toIso(parts[parts.length - 1])
+  if (last) return { text: parts.slice(0, -1).join(';').trim(), due_date: last }
+
+  return { text: raw.trim(), due_date: '' }
 }
 
 function formatShortDate(iso: string) {
