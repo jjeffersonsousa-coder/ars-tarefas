@@ -16,6 +16,19 @@ interface ChecklistProps {
   onUpdate?: () => void
 }
 
+function parseChecklistInput(raw: string): { text: string; due_date: string } {
+  const parts = raw.split(';')
+  if (parts.length < 2) return { text: raw.trim(), due_date: '' }
+  const text = parts[0].trim()
+  const datePart = parts.slice(1).join(';').trim()
+  const match = datePart.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/)
+  if (!match) return { text: raw.trim(), due_date: '' }
+  const day = match[1].padStart(2, '0')
+  const month = match[2].padStart(2, '0')
+  const year = match[3] ?? new Date().getFullYear().toString()
+  return { text, due_date: `${year}-${month}-${day}` }
+}
+
 function formatShortDate(iso: string) {
   const [y, m, d] = iso.split('-')
   return `${d}/${m}/${y}`
@@ -61,14 +74,17 @@ export function Checklist({ activityId, items: initialItems, canEdit = false, on
   async function addItem() {
     if (!newItemText.trim()) return
     setAdding(true)
+    const parsed = parseChecklistInput(newItemText)
+    const finalText = parsed.text
+    const finalDate = parsed.due_date || newItemDate || null
     const { data } = await (supabase as any)
       .from('checklist_items')
       .insert({
         activity_id: activityId,
-        text: newItemText.trim(),
+        text: finalText,
         order_index: items.length,
         completed: false,
-        due_date: newItemDate || null,
+        due_date: finalDate,
       })
       .select()
       .single()
@@ -188,12 +204,18 @@ export function Checklist({ activityId, items: initialItems, canEdit = false, on
       </div>
 
       {canEdit && (
-        <div className="space-y-2 pt-1">
+        <div className="space-y-1.5 pt-1">
           <div className="flex items-center gap-2">
             <Input
-              placeholder="Adicionar item..."
+              placeholder="Item; 15/10 — ou clique no 📅"
               value={newItemText}
-              onChange={e => setNewItemText(e.target.value)}
+              onChange={e => {
+                setNewItemText(e.target.value)
+                // Auto-open date picker when semicolon detected with a valid date part
+                const parsed = parseChecklistInput(e.target.value)
+                if (parsed.due_date) { setNewItemDate(parsed.due_date); setShowDateFor('new') }
+                else if (!e.target.value.includes(';')) setShowDateFor(null)
+              }}
               onKeyDown={e => e.key === 'Enter' && addItem()}
               className="h-8 text-sm"
             />
