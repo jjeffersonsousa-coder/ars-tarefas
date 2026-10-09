@@ -14,7 +14,7 @@ import {
   STATUS_COLORS,
 } from '@/lib/types'
 import { formatDate, formatDateTime, getInitials, cn } from '@/lib/utils'
-import { Calendar, Clock, User, UserCheck, Edit, ArrowLeft, RefreshCw, Pencil, Check, X } from 'lucide-react'
+import { Calendar, Clock, User, UserCheck, Edit, ArrowLeft, RefreshCw, Pencil, Check, X, Share2, Copy, CheckCheck } from 'lucide-react'
 import Link from 'next/link'
 import { Checklist } from './checklist'
 import { ActivityHistoryLog } from './activity-history'
@@ -42,6 +42,30 @@ export function ActivityDetail({
   const [notes, setNotes] = useState(activity.rich_notes ?? '')
   const [editingNotes, setEditingNotes] = useState(false)
   const [savingNotes, setSavingNotes] = useState(false)
+  const [shareToken, setShareToken] = useState<string | null>((activity as any).share_token ?? null)
+  const [sharing, setSharing] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  async function shareActivity() {
+    setSharing(true)
+    let token = shareToken
+    if (!token) {
+      // generate a new UUID token
+      token = crypto.randomUUID()
+      const { error } = await (supabase as any)
+        .from('activities')
+        .update({ share_token: token })
+        .eq('id', activity.id)
+      if (error) { toast.error('Erro ao gerar link'); setSharing(false); return }
+      setShareToken(token)
+    }
+    const url = `${window.location.origin}/share/${token}`
+    await navigator.clipboard.writeText(url)
+    setCopied(true)
+    toast.success('Link copiado! Cole e envie para quem quiser acompanhar.')
+    setTimeout(() => setCopied(false), 3000)
+    setSharing(false)
+  }
 
   async function saveNotes() {
     setSavingNotes(true)
@@ -87,14 +111,29 @@ export function ActivityDetail({
               <p className="text-sm text-indigo-600 mt-1 font-medium">{activity.context}</p>
             )}
           </div>
-          {canEdit && (
-            <Button asChild size="sm">
-              <Link href={`/activities/${activity.id}/edit`}>
-                <Edit className="h-4 w-4 mr-1" />
-                Editar
-              </Link>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={shareActivity}
+              disabled={sharing}
+              title="Compartilhar link público"
+            >
+              {copied ? (
+                <><CheckCheck className="h-4 w-4 mr-1 text-green-600" /><span className="text-green-600">Copiado!</span></>
+              ) : (
+                <><Share2 className="h-4 w-4 mr-1" />Compartilhar</>
+              )}
             </Button>
-          )}
+            {canEdit && (
+              <Button asChild size="sm">
+                <Link href={`/activities/${activity.id}/edit`}>
+                  <Edit className="h-4 w-4 mr-1" />
+                  Editar
+                </Link>
+              </Button>
+            )}
+          </div>
         </div>
 
         {activity.description && (
