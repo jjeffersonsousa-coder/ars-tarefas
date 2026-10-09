@@ -81,10 +81,10 @@ export default function CalendarPage() {
   [activities, selectedDept])
 
   const activitiesByDay = useMemo(() => {
-    // Parse only the date portion to avoid timezone shifts
+    // Convert to local date (avoids UTC date being 1 day ahead in UTC-3 timezone)
     function parseLocalDate(iso: string) {
-      const [y, m, d] = iso.split('T')[0].split('-').map(Number)
-      return new Date(y, m - 1, d)
+      const d = new Date(iso)
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate())
     }
     const map: Record<number, Activity[]> = {}
     for (const a of filteredActivities) {
