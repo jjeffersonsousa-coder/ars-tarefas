@@ -90,6 +90,7 @@ export interface ChecklistItem {
   text: string
   completed: boolean
   order_index: number
+  due_date?: string | null
   created_at: string
 }
 
