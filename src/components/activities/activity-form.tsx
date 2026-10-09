@@ -46,7 +46,8 @@ interface ActivityFormProps {
 function toLocalDatetime(iso?: string | null): { date: string; time: string } {
   if (!iso) return { date: '', time: '' }
   const d = new Date(iso)
-  const date = d.toISOString().split('T')[0]
+  // Use local getters so UTC midnight (+00:00) maps to the correct local date
+  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   const time = d.toTimeString().slice(0, 5)
   return { date, time }
 }
