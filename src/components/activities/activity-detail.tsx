@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Activity, ActivityHistory as ActivityHistoryType, ChecklistItem, UserRole } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -13,10 +14,13 @@ import {
   STATUS_COLORS,
 } from '@/lib/types'
 import { formatDate, formatDateTime, getInitials, cn } from '@/lib/utils'
-import { Calendar, Clock, User, UserCheck, Edit, ArrowLeft, RefreshCw } from 'lucide-react'
+import { Calendar, Clock, User, UserCheck, Edit, ArrowLeft, RefreshCw, Pencil, Check, X } from 'lucide-react'
 import Link from 'next/link'
 import { Checklist } from './checklist'
 import { ActivityHistoryLog } from './activity-history'
+import { RichEditor } from '@/components/ui/rich-editor'
+import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 
 interface ActivityDetailProps {
   activity: Activity
@@ -34,6 +38,21 @@ export function ActivityDetail({
   currentUserId,
 }: ActivityDetailProps) {
   const canEdit = ['super_admin', 'admin', 'gestor', 'editor'].includes(userRole)
+  const supabase = createClient()
+  const [notes, setNotes] = useState(activity.rich_notes ?? '')
+  const [editingNotes, setEditingNotes] = useState(false)
+  const [savingNotes, setSavingNotes] = useState(false)
+
+  async function saveNotes() {
+    setSavingNotes(true)
+    const { error } = await supabase
+      .from('activities')
+      .update({ rich_notes: notes || null, updated_at: new Date().toISOString() })
+      .eq('id', activity.id)
+    if (error) toast.error('Erro ao salvar nota')
+    else { toast.success('Nota salva!'); setEditingNotes(false) }
+    setSavingNotes(false)
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -193,8 +212,42 @@ export function ActivityDetail({
         </TabsContent>
 
         <TabsContent value="notes">
-          <div className="bg-white rounded-lg border p-6">
-            {activity.rich_notes ? (
+          <div className="bg-white rounded-lg border p-6 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-400 font-medium">Notas</span>
+              {canEdit && !editingNotes && (
+                <button
+                  onClick={() => setEditingNotes(true)}
+                  className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-blue-600 transition-colors"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  {notes ? 'Editar' : 'Adicionar nota'}
+                </button>
+              )}
+              {editingNotes && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={saveNotes}
+                    disabled={savingNotes}
+                    className="flex items-center gap-1 text-xs font-medium text-green-600 hover:text-green-700 disabled:opacity-50"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    Salvar
+                  </button>
+                  <button
+                    onClick={() => { setEditingNotes(false); setNotes(activity.rich_notes ?? '') }}
+                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Cancelar
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {editingNotes ? (
+              <RichEditor value={notes} onChange={setNotes} placeholder="Escreva suas notas aqui..." minHeight="180px" />
+            ) : notes ? (
               <div
                 className="prose prose-sm max-w-none text-gray-700
                   [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2
@@ -207,10 +260,15 @@ export function ActivityDetail({
                   [&_h2]:text-base [&_h2]:font-bold [&_h2]:mt-3 [&_h2]:mb-1
                   [&_h3]:text-sm [&_h3]:font-bold [&_h3]:mt-2 [&_h3]:mb-0.5
                   [&_br]:block"
-                dangerouslySetInnerHTML={{ __html: activity.rich_notes }}
+                dangerouslySetInnerHTML={{ __html: notes }}
               />
             ) : (
-              <p className="text-sm text-gray-400 text-center py-4">Nenhuma nota adicionada</p>
+              <button
+                onClick={() => canEdit && setEditingNotes(true)}
+                className={cn('w-full text-sm text-gray-400 text-center py-8 rounded-lg border-2 border-dashed border-gray-100 transition-colors', canEdit && 'hover:border-blue-200 hover:text-blue-500 cursor-pointer')}
+              >
+                {canEdit ? '+ Clique para adicionar uma nota' : 'Nenhuma nota adicionada'}
+              </button>
             )}
           </div>
         </TabsContent>
