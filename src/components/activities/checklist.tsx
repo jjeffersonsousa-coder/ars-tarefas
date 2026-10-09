@@ -49,9 +49,16 @@ function isOverdueDate(iso: string) {
 
 export function Checklist({ activityId, items: initialItems, canEdit = false, onUpdate }: ChecklistProps) {
   const supabase = createClient()
-  const [items, setItems] = useState<ChecklistItem[]>(
-    [...initialItems].sort((a, b) => a.order_index - b.order_index)
-  )
+  function sortItems(list: ChecklistItem[]) {
+    return [...list].sort((a, b) => {
+      if (a.due_date && b.due_date) return a.due_date < b.due_date ? -1 : 1
+      if (a.due_date) return -1
+      if (b.due_date) return 1
+      return a.order_index - b.order_index
+    })
+  }
+
+  const [items, setItems] = useState<ChecklistItem[]>(sortItems(initialItems))
   const [newItemText, setNewItemText] = useState('')
   const [newItemDate, setNewItemDate] = useState('')
   const [adding, setAdding] = useState(false)
@@ -67,7 +74,7 @@ export function Checklist({ activityId, items: initialItems, canEdit = false, on
     if (!editingText.trim()) { setEditingId(null); return }
     const due_date = editingDate || null
     await (supabase as any).from('checklist_items').update({ text: editingText.trim(), due_date }).eq('id', itemId)
-    setItems(prev => prev.map(i => i.id === itemId ? { ...i, text: editingText.trim(), due_date } : i))
+    setItems(prev => sortItems(prev.map(i => i.id === itemId ? { ...i, text: editingText.trim(), due_date } : i)))
     setEditingId(null)
     onUpdate?.()
   }
@@ -97,7 +104,7 @@ export function Checklist({ activityId, items: initialItems, canEdit = false, on
       .select()
       .single()
     if (data) {
-      setItems(prev => [...prev, data as ChecklistItem])
+      setItems(prev => sortItems([...prev, data as ChecklistItem]))
       setNewItemText('')
       setNewItemDate('')
       setShowDateFor(null)
@@ -114,7 +121,7 @@ export function Checklist({ activityId, items: initialItems, canEdit = false, on
 
   async function clearDate(itemId: string) {
     await (supabase as any).from('checklist_items').update({ due_date: null }).eq('id', itemId)
-    setItems(prev => prev.map(i => i.id === itemId ? { ...i, due_date: null } : i))
+    setItems(prev => sortItems(prev.map(i => i.id === itemId ? { ...i, due_date: null } : i)))
     onUpdate?.()
   }
 
