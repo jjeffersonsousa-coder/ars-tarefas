@@ -69,7 +69,14 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
   const [error, setError] = useState<string | null>(null)
   const [recurringModal, setRecurringModal] = useState<{ data: ActivityFormData } | null>(null)
   // Recurrence state
-  const [allDay, setAllDay] = useState(!activity?.due_date || !activity.due_date.includes('T') || activity.due_date.endsWith('T00:00:00'))
+  const [allDay, setAllDay] = useState(() => {
+    if (!activity?.due_date) return true
+    const raw = activity.due_date
+    if (!raw.includes('T')) return true
+    // Extract only the time portion from the raw string (before any offset)
+    const timePart = raw.split('T')[1]?.split('+')[0].split('-')[0].replace('Z', '') ?? ''
+    return timePart.startsWith('00:00')
+  })
   const [isRecurring, setIsRecurring] = useState(activity?.is_recurring ?? false)
   const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>(activity?.recurrence_type ?? 'weekly')
   const [recurrenceInterval, setRecurrenceInterval] = useState(activity?.recurrence_interval ?? 1)
