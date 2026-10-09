@@ -10,7 +10,9 @@ export function cn(...inputs: ClassValue[]) {
 export function formatDate(date: string | Date | null | undefined): string {
   if (!date) return '—'
   const d = typeof date === 'string' ? parseISO(date) : date
-  const hasTime = typeof date === 'string' && /T\d{2}:\d{2}/.test(date) && !date.endsWith('T00:00:00.000Z')
+  // Treat as all-day if stored as midnight UTC (00:00:00Z or 00:00:00+00:00)
+  const isAllDay = typeof date === 'string' && /T00:00:00(\.\d+)?(Z|\+00:00)$/.test(date)
+  const hasTime = typeof date === 'string' && /T\d{2}:\d{2}/.test(date) && !isAllDay
   return hasTime
     ? format(d, "dd/MM 'às' HH:mm", { locale: ptBR })
     : format(d, 'dd/MM/yyyy', { locale: ptBR })
