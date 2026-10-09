@@ -14,7 +14,14 @@ import {
   STATUS_COLORS,
 } from '@/lib/types'
 import { formatDate, formatDateTime, getInitials, cn } from '@/lib/utils'
-import { Calendar, Clock, User, UserCheck, Edit, ArrowLeft, RefreshCw, Pencil, Check, X, Share2, Copy, CheckCheck } from 'lucide-react'
+import { Calendar, Clock, User, UserCheck, Edit, ArrowLeft, RefreshCw, Pencil, Check, X, Share2, CheckCheck, Link2, Trash2, ChevronDown } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import Link from 'next/link'
 import { Checklist } from './checklist'
 import { ActivityHistoryLog } from './activity-history'
@@ -50,7 +57,6 @@ export function ActivityDetail({
     setSharing(true)
     let token = shareToken
     if (!token) {
-      // generate a new UUID token
       token = crypto.randomUUID()
       const { error } = await (supabase as any)
         .from('activities')
@@ -62,9 +68,19 @@ export function ActivityDetail({
     const url = `${window.location.origin}/share/${token}`
     await navigator.clipboard.writeText(url)
     setCopied(true)
-    toast.success('Link copiado! Cole e envie para quem quiser acompanhar.')
+    toast.success('Link copiado!')
     setTimeout(() => setCopied(false), 3000)
     setSharing(false)
+  }
+
+  async function removeShare() {
+    const { error } = await (supabase as any)
+      .from('activities')
+      .update({ share_token: null })
+      .eq('id', activity.id)
+    if (error) { toast.error('Erro ao remover link'); return }
+    setShareToken(null)
+    toast.success('Link de compartilhamento removido.')
   }
 
   async function saveNotes() {
@@ -112,19 +128,36 @@ export function ActivityDetail({
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={shareActivity}
-              disabled={sharing}
-              title="Compartilhar link público"
-            >
-              {copied ? (
-                <><CheckCheck className="h-4 w-4 mr-1 text-green-600" /><span className="text-green-600">Copiado!</span></>
-              ) : (
-                <><Share2 className="h-4 w-4 mr-1" />Compartilhar</>
-              )}
-            </Button>
+            {shareToken ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="border-green-300 text-green-700 hover:bg-green-50 gap-1.5">
+                    {copied
+                      ? <><CheckCheck className="h-3.5 w-3.5" />Copiado!</>
+                      : <><Link2 className="h-3.5 w-3.5" />Link ativo<ChevronDown className="h-3 w-3 opacity-60" /></>
+                    }
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={shareActivity} className="gap-2 cursor-pointer">
+                    <Link2 className="h-4 w-4 text-gray-500" />
+                    Copiar link
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={removeShare} className="gap-2 cursor-pointer text-red-600 focus:text-red-600">
+                    <Trash2 className="h-4 w-4" />
+                    Remover link
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="outline" size="sm" onClick={shareActivity} disabled={sharing}>
+                {copied
+                  ? <><CheckCheck className="h-4 w-4 mr-1 text-green-600" /><span className="text-green-600">Copiado!</span></>
+                  : <><Share2 className="h-4 w-4 mr-1" />Compartilhar</>
+                }
+              </Button>
+            )}
             {canEdit && (
               <Button asChild size="sm">
                 <Link href={`/activities/${activity.id}/edit`}>
