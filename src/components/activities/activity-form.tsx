@@ -473,24 +473,50 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
               </div>
             </div>
 
-            {recurrenceType === 'weekly' && (
+            {(recurrenceType === 'weekly' || recurrenceType === 'daily') && (
               <div>
-                <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Dias da semana</Label>
-                <div className="flex gap-2 mt-2 flex-wrap">
-                  {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, i) => (
-                    <button
-                      type="button" key={i}
-                      onClick={() => setRecurrenceDays((prev) => prev.includes(i) ? prev.filter((d) => d !== i) : [...prev, i])}
-                      style={{
-                        width: '40px', height: '40px', borderRadius: '10px', fontSize: '12px', fontWeight: 600,
-                        cursor: 'pointer', border: '2px solid',
-                        borderColor: recurrenceDays.includes(i) ? '#006494' : '#E5E7EB',
-                        background: recurrenceDays.includes(i) ? '#006494' : 'white',
-                        color: recurrenceDays.includes(i) ? 'white' : '#6B7280',
-                      }}
-                    >{day}</button>
-                  ))}
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                    {recurrenceType === 'daily' ? 'Repetir apenas nestes dias' : 'Dias da semana'}
+                  </Label>
+                  {recurrenceType === 'daily' && (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setRecurrenceDays([1, 2, 3, 4, 5])}
+                        className="text-[11px] text-indigo-600 hover:underline font-medium"
+                      >Dias úteis</button>
+                      <button
+                        type="button"
+                        onClick={() => setRecurrenceDays([])}
+                        className="text-[11px] text-gray-400 hover:underline font-medium"
+                      >Todos</button>
+                    </div>
+                  )}
                 </div>
+                <div className="flex gap-2 flex-wrap">
+                  {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, i) => {
+                    const isWeekend = i === 0 || i === 6
+                    const active = recurrenceDays.length === 0 ? true : recurrenceDays.includes(i)
+                    const selected = recurrenceDays.includes(i)
+                    return (
+                      <button
+                        type="button" key={i}
+                        onClick={() => setRecurrenceDays((prev) => prev.includes(i) ? prev.filter((d) => d !== i) : [...prev, i])}
+                        style={{
+                          width: '40px', height: '40px', borderRadius: '10px', fontSize: '12px', fontWeight: 600,
+                          cursor: 'pointer', border: '2px solid',
+                          borderColor: selected ? '#006494' : '#E5E7EB',
+                          background: selected ? '#006494' : recurrenceType === 'daily' && isWeekend && recurrenceDays.length === 0 ? '#FEF2F2' : 'white',
+                          color: selected ? 'white' : recurrenceType === 'daily' && isWeekend && recurrenceDays.length === 0 ? '#FCA5A5' : '#6B7280',
+                        }}
+                      >{day}</button>
+                    )
+                  })}
+                </div>
+                {recurrenceType === 'daily' && recurrenceDays.length === 0 && (
+                  <p className="text-[11px] text-gray-400 mt-1.5">Sem seleção = repete todos os dias. Clique em "Dias úteis" para excluir fins de semana.</p>
+                )}
               </div>
             )}
 
