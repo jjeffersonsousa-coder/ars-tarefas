@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, ListTodo, Building2, Users2, Tag,
   Settings2, LogOut, Menu, X, Zap, CalendarDays,
-  ChevronLeft, ChevronRight, Layers, ShieldAlert,
+  ChevronLeft, ChevronRight, Layers, ShieldAlert, BarChart2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
@@ -18,6 +18,7 @@ const navItems = [
   { href: '/dashboard',    label: 'Dashboard',     icon: LayoutDashboard, color: '#1B98E0', bg: 'rgba(27,152,224,0.18)' },
   { href: '/activities',   label: 'Atividades',    icon: ListTodo,        color: '#1ABC9C', bg: 'rgba(26,188,156,0.18)' },
   { href: '/calendar',     label: 'Calendário',    icon: CalendarDays,    color: '#2ECC71', bg: 'rgba(46,204,113,0.18)' },
+  { href: '/analytics',    label: 'Análise',       icon: BarChart2,       color: '#3B82F6', bg: 'rgba(59,130,246,0.18)' },
   { href: '/departments',  label: 'Departamentos', icon: Layers,          color: '#9B59B6', bg: 'rgba(155,89,182,0.18)' },
   { href: '/entities',     label: 'Empresas',     icon: Building2,       color: '#E67E22', bg: 'rgba(230,126,34,0.18)'  },
   { href: '/users',        label: 'Usuários',      icon: Users2,          color: '#E74C3C', bg: 'rgba(231,76,60,0.18)'  },
