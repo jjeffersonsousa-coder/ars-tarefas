@@ -515,7 +515,7 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
                   })}
                 </div>
                 {recurrenceType === 'daily' && recurrenceDays.length === 0 && (
-                  <p className="text-[11px] text-gray-400 mt-1.5">Sem seleção = repete todos os dias. Clique em "Dias úteis" para excluir fins de semana.</p>
+                  <p className="text-[11px] text-gray-400 mt-1.5">Sem seleção = repete todos os dias. Clique em &quot;Dias úteis&quot; para excluir fins de semana.</p>
                 )}
               </div>
             )}
