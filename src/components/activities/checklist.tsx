@@ -47,6 +47,13 @@ function isOverdueDate(iso: string) {
   return iso < today
 }
 
+function daysOverdue(iso: string) {
+  const today = new Date(); today.setHours(0,0,0,0)
+  const [y, m, d] = iso.split('-').map(Number)
+  const due = new Date(y, m - 1, d)
+  return Math.floor((today.getTime() - due.getTime()) / 86400000)
+}
+
 export function Checklist({ activityId, items: initialItems, canEdit = false, onUpdate }: ChecklistProps) {
   const supabase = createClient()
   function sortItems(list: ChecklistItem[]) {
@@ -69,6 +76,7 @@ export function Checklist({ activityId, items: initialItems, canEdit = false, on
 
   const completedCount = items.filter((i) => i.completed).length
   const progress = items.length > 0 ? (completedCount / items.length) * 100 : 0
+  const overdueCount = items.filter(i => i.due_date && !i.completed && isOverdueDate(i.due_date)).length
 
   async function saveEdit(itemId: string) {
     if (!editingText.trim()) { setEditingId(null); return }
@@ -133,6 +141,15 @@ export function Checklist({ activityId, items: initialItems, canEdit = false, on
         </h4>
       </div>
 
+      {overdueCount > 0 && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
+          <span className="text-sm text-red-700 font-medium">
+            {overdueCount} {overdueCount === 1 ? 'item em atraso' : 'itens em atraso'} no checklist
+          </span>
+        </div>
+      )}
+
       {items.length > 0 && (
         <div className="w-full bg-gray-200 rounded-full h-1.5">
           <div className="bg-green-500 h-1.5 rounded-full transition-all" style={{ width: `${progress}%` }} />
@@ -186,11 +203,18 @@ export function Checklist({ activityId, items: initialItems, canEdit = false, on
                       {item.text}
                     </span>
                     {item.due_date && (
-                      <div className={cn('flex items-center gap-1 mt-0.5', overdue ? 'text-red-600' : 'text-gray-400')}>
-                        {overdue ? <AlertTriangle className="h-3 w-3" /> : <CalendarDays className="h-3 w-3" />}
-                        <span className="text-[11px] font-medium">{formatShortDate(item.due_date)}</span>
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        <div className={cn('flex items-center gap-1', overdue ? 'text-red-600' : 'text-gray-400')}>
+                          {overdue ? <AlertTriangle className="h-3 w-3" /> : <CalendarDays className="h-3 w-3" />}
+                          <span className="text-[11px] font-medium">{formatShortDate(item.due_date)}</span>
+                        </div>
+                        {overdue && (
+                          <span className="text-[11px] font-semibold bg-red-500 text-white px-1.5 py-0.5 rounded-full leading-none">
+                            {daysOverdue(item.due_date) === 1 ? '1 dia' : `${daysOverdue(item.due_date)} dias`} em atraso
+                          </span>
+                        )}
                         {canEdit && (
-                          <button onClick={() => clearDate(item.id)} className="opacity-0 group-hover:opacity-100 ml-0.5 text-gray-400 hover:text-red-500 transition-all">
+                          <button onClick={() => clearDate(item.id)} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all">
                             <X className="h-3 w-3" />
                           </button>
                         )}
