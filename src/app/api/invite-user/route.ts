@@ -13,11 +13,17 @@ export async function POST(req: NextRequest) {
 
   // Verify caller via Bearer token
   const authHeader = req.headers.get('Authorization')
-  if (!authHeader?.startsWith('Bearer ')) {
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : null
+  if (!token) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
-  const token = authHeader.replace('Bearer ', '')
-  const { data: { user }, error: authError } = await adminClient.auth.getUser(token)
+
+  // Use user-scoped client to verify the token
+  const userClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+  const { data: { user }, error: authError } = await userClient.auth.getUser()
   if (authError || !user) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
