@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Activity, UserProfile, Department } from '@/lib/types'
-import { BarChart2, Layers } from 'lucide-react'
+import { BarChart2, Layers, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import {
@@ -21,15 +21,39 @@ ChartJS.register(
 
 type Period = 'month' | 'week' | 'year'
 
-function startOfPeriod(period: Period): Date {
+const PERIOD_LABELS: Record<Period, string> = { month: 'Mês', week: 'Semana', year: 'Ano' }
+const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+
+function getPeriodRange(period: Period, offset: number): { from: Date; to: Date } {
   const now = new Date()
   if (period === 'week') {
-    const d = new Date(now); d.setDate(now.getDate() - 6); d.setHours(0,0,0,0); return d
+    const mon = new Date(now); mon.setDate(now.getDate() - now.getDay() + 1 + offset * 7); mon.setHours(0,0,0,0)
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6); sun.setHours(23,59,59,999)
+    return { from: mon, to: sun }
   }
-  if (period === 'year') {
-    return new Date(now.getFullYear(), 0, 1)
+  if (period === 'month') {
+    const from = new Date(now.getFullYear(), now.getMonth() + offset, 1)
+    const to = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0, 23, 59, 59)
+    return { from, to }
   }
-  return new Date(now.getFullYear(), now.getMonth(), 1)
+  const y = now.getFullYear() + offset
+  return { from: new Date(y, 0, 1), to: new Date(y, 11, 31, 23, 59, 59) }
+}
+
+function getPeriodLabel(period: Period, offset: number): string {
+  if (offset === 0) return PERIOD_LABELS[period]
+  const now = new Date()
+  if (period === 'month') {
+    const d = new Date(now.getFullYear(), now.getMonth() + offset, 1)
+    return `${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+  }
+  if (period === 'week') {
+    const pad = (n: number) => String(n).padStart(2,'0')
+    const mon = new Date(now); mon.setDate(now.getDate() - now.getDay() + 1 + offset * 7)
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6)
+    return `${pad(mon.getDate())}/${pad(mon.getMonth()+1)} – ${pad(sun.getDate())}/${pad(sun.getMonth()+1)}`
+  }
+  return String(now.getFullYear() + offset)
 }
 
 function toLocalDate(iso: string) {
@@ -49,6 +73,7 @@ export default function AnalyticsPage() {
   const [departments, setDepartments] = useState<Department[]>([])
   const [selectedDept, setSelectedDept] = useState('all')
   const [period, setPeriod] = useState<Period>('month')
+  const [periodOffset, setPeriodOffset] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -77,19 +102,19 @@ export default function AnalyticsPage() {
   }, [])
 
   const filtered = useMemo(() => {
-    const start = startOfPeriod(period)
+    const { from, to } = getPeriodRange(period, periodOffset)
     return activities.filter(a => {
       if (!a.due_date) return false
       const d = toLocalDate(a.due_date)
-      if (d < start) return false
+      if (d < from || d > to) return false
       if (selectedDept !== 'all' && a.department_id !== selectedDept) return false
       return true
     })
-  }, [activities, period, selectedDept])
+  }, [activities, period, periodOffset, selectedDept])
 
   const { labels, concluidas, pendentes, cumulative } = useMemo(() => {
-    const start = startOfPeriod(period)
-    const end = new Date()
+    const { from: start, to: periodEnd } = getPeriodRange(period, periodOffset)
+    const end = periodOffset === 0 ? new Date() : periodEnd
     const days: Date[] = []
     const cur = new Date(start)
     while (cur <= end) { days.push(new Date(cur)); cur.setDate(cur.getDate() + 1) }
@@ -112,7 +137,7 @@ export default function AnalyticsPage() {
     const cumulative = concluidas.reduce((acc: number[], v, i) => [...acc, (acc[i-1] ?? 0) + v], [])
 
     return { labels, concluidas, pendentes, cumulative }
-  }, [filtered, period])
+  }, [filtered, period, periodOffset])
 
   const byPriority = useMemo(() => ({
     urgente: filtered.filter(a => a.priority === 'urgente').length,
@@ -163,8 +188,6 @@ export default function AnalyticsPage() {
     </div>
   )
 
-  const periodLabel = period === 'month' ? 'Mês atual' : period === 'week' ? 'Últimos 7 dias' : 'Este ano'
-
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -174,7 +197,6 @@ export default function AnalyticsPage() {
             <BarChart2 className="h-6 w-6 text-indigo-600 shrink-0" />
             Análise de Atividades
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">{periodLabel}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {departments.length > 0 && (
@@ -189,18 +211,40 @@ export default function AnalyticsPage() {
               </SelectContent>
             </Select>
           )}
-          <div className="flex rounded-lg border bg-white overflow-hidden">
+          {/* Period selector + navigation — same style as Dashboard */}
+          <div className="flex items-center bg-white border rounded-xl overflow-hidden shadow-sm">
             {(['month','week','year'] as Period[]).map(p => (
               <button
                 key={p}
-                onClick={() => setPeriod(p)}
-                className={cn('px-3 py-1.5 text-sm font-medium transition-colors',
+                onClick={() => { setPeriod(p); setPeriodOffset(0) }}
+                className={cn(
+                  'px-4 py-2 text-sm font-medium transition-colors border-r last:border-r-0',
                   period === p ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50'
                 )}
               >
-                {p === 'month' ? 'Mês' : p === 'week' ? 'Semana' : 'Ano'}
+                {PERIOD_LABELS[p]}
               </button>
             ))}
+            <div className="flex items-center border-l">
+              <button
+                onClick={() => setPeriodOffset(o => o - 1)}
+                className="px-2 py-2 text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="text-sm font-medium text-gray-700 min-w-[80px] text-center">
+                {getPeriodLabel(period, periodOffset)}
+              </span>
+              <button
+                onClick={() => setPeriodOffset(o => o + 1)}
+                disabled={periodOffset >= 0}
+                className={cn('px-2 py-2 transition-colors',
+                  periodOffset < 0 ? 'text-gray-500 hover:bg-gray-50 hover:text-gray-800' : 'text-gray-300 cursor-not-allowed'
+                )}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

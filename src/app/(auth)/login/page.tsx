@@ -121,7 +121,12 @@ export default function LoginPage() {
                 placeholder="seu@email.com" required className="mt-1.5 h-11 rounded-xl" />
             </div>
             <div>
-              <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
+                <Link href="/forgot-password" className="text-xs text-blue-600 hover:text-blue-800">
+                  Esqueci minha senha
+                </Link>
+              </div>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••" required className="mt-1.5 h-11 rounded-xl" />
             </div>
