@@ -102,20 +102,14 @@ export default function AdminPage() {
     e.preventDefault()
     if (!entityName.trim()) return
     setSaving(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    const res = await fetch('/api/entities', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
-      body: JSON.stringify({
-        name: entityName.trim(),
-        type: entityType,
-        document: entityDocument || null,
-        email: entityEmail || null,
-        updated_at: new Date().toISOString(),
-      }),
-    })
-    if (!res.ok) { const j = await res.json(); toast.error('Erro ao criar empresa: ' + (j.error || 'Erro desconhecido')); setSaving(false); return }
-    const entity = await res.json()
+    const { data: entity, error } = await (supabase as any).from('entities').insert({
+      name: entityName.trim(),
+      type: entityType,
+      document: entityDocument || null,
+      email: entityEmail || null,
+      updated_at: new Date().toISOString(),
+    }).select().single()
+    if (error) { toast.error('Erro ao criar empresa: ' + error.message); setSaving(false); return }
     setCreatedEntity(entity as Entity)
     setStep('admin')
     setSaving(false)

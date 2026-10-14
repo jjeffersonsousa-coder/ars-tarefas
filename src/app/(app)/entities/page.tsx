@@ -79,26 +79,13 @@ export default function EntitiesPage() {
       updated_at: new Date().toISOString(),
     }
 
-    const { data: { session } } = await supabase.auth.getSession()
-    const token = session?.access_token
-    if (!token) { setError('Sessão inválida'); setSaving(false); return }
-
     if (editEntity) {
-      const res = await fetch('/api/entities', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ id: editEntity.id, ...payload }),
-      })
-      if (!res.ok) { const j = await res.json(); setError(j.error || 'Erro ao salvar'); setSaving(false); return }
+      const { error } = await supabase.from('entities').update(payload).eq('id', editEntity.id)
+      if (error) { setError(error.message); setSaving(false); return }
       setEntities((prev) => prev.map((e) => e.id === editEntity.id ? { ...e, ...payload } : e))
     } else {
-      const res = await fetch('/api/entities', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload),
-      })
-      if (!res.ok) { const j = await res.json(); setError(j.error || 'Erro ao criar'); setSaving(false); return }
-      const data = await res.json()
+      const { data, error } = await supabase.from('entities').insert(payload).select().single()
+      if (error) { setError(error.message); setSaving(false); return }
       setEntities((prev) => [...prev, data as Entity])
     }
 
