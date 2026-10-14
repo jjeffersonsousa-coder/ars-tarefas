@@ -52,6 +52,8 @@ export function ActivityDetail({
   const [shareToken, setShareToken] = useState<string | null>((activity as any).share_token ?? null)
   const [sharing, setSharing] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [currentStatus, setCurrentStatus] = useState(activity.status)
+  const [completingStatus, setCompletingStatus] = useState(false)
 
   async function shareActivity() {
     setSharing(true)
@@ -83,6 +85,21 @@ export function ActivityDetail({
     toast.success('Link de compartilhamento removido.')
   }
 
+  async function toggleComplete() {
+    setCompletingStatus(true)
+    const newStatus = currentStatus === 'concluida' ? 'pendente' : 'concluida'
+    const { error } = await supabase
+      .from('activities')
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', activity.id)
+    if (error) toast.error('Erro ao atualizar status')
+    else {
+      setCurrentStatus(newStatus)
+      toast.success(newStatus === 'concluida' ? 'Atividade concluída!' : 'Atividade reaberta.')
+    }
+    setCompletingStatus(false)
+  }
+
   async function saveNotes() {
     setSavingNotes(true)
     const { error } = await supabase
@@ -112,8 +129,8 @@ export function ActivityDetail({
               <Badge className={cn('border text-xs', PRIORITY_COLORS[activity.priority])}>
                 {PRIORITY_LABELS[activity.priority]}
               </Badge>
-              <Badge className={cn('border text-xs', STATUS_COLORS[activity.status])}>
-                {STATUS_LABELS[activity.status]}
+              <Badge className={cn('border text-xs', STATUS_COLORS[currentStatus])}>
+                {STATUS_LABELS[currentStatus]}
               </Badge>
               {activity.is_recurring && (
                 <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">
@@ -156,6 +173,23 @@ export function ActivityDetail({
                   ? <><CheckCheck className="h-4 w-4 mr-1 text-green-600" /><span className="text-green-600">Copiado!</span></>
                   : <><Share2 className="h-4 w-4 mr-1" />Compartilhar</>
                 }
+              </Button>
+            )}
+            {canEdit && currentStatus !== 'cancelada' && (
+              <Button
+                size="sm"
+                variant={currentStatus === 'concluida' ? 'outline' : 'default'}
+                onClick={toggleComplete}
+                disabled={completingStatus}
+                className={cn(
+                  'gap-1.5',
+                  currentStatus === 'concluida'
+                    ? 'border-green-300 text-green-700 hover:bg-green-50'
+                    : 'bg-green-600 hover:bg-green-700 text-white'
+                )}
+              >
+                <Check className="h-4 w-4" />
+                {currentStatus === 'concluida' ? 'Concluída' : 'Concluir'}
               </Button>
             )}
             {canEdit && (
