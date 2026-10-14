@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Activity, UserProfile, Department } from '@/lib/types'
-import { BarChart2, Layers, ChevronLeft, ChevronRight } from 'lucide-react'
+import { BarChart2, Layers, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import {
@@ -75,6 +75,22 @@ export default function AnalyticsPage() {
   const [period, setPeriod] = useState<Period>('month')
   const [periodOffset, setPeriodOffset] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const entityIdRef = useState<string | null>(null)
+
+  async function fetchActivities(entityId: string) {
+    let query = (supabase as any).from('activities').select('*')
+    if (entityId) query = query.eq('entity_id', entityId)
+    const { data } = await query
+    if (data) setActivities(data as Activity[])
+  }
+
+  async function handleRefresh() {
+    if (!entityIdRef[0]) return
+    setRefreshing(true)
+    await fetchActivities(entityIdRef[0])
+    setRefreshing(false)
+  }
 
   useEffect(() => {
     async function init() {
@@ -85,11 +101,8 @@ export default function AnalyticsPage() {
       setProfile(p as UserProfile)
 
       const effectiveEntityId = (p as any).viewing_entity_id ?? p.entity_id
-      let query = (supabase as any).from('activities').select('*')
-      if (effectiveEntityId) query = query.eq('entity_id', effectiveEntityId)
-
-      const { data } = await query
-      if (data) setActivities(data as Activity[])
+      entityIdRef[1](effectiveEntityId ?? null)
+      await fetchActivities(effectiveEntityId)
 
       if (effectiveEntityId) {
         const { data: depts } = await (supabase as any)
@@ -99,6 +112,10 @@ export default function AnalyticsPage() {
       setLoading(false)
     }
     init()
+
+    function onFocus() { if (entityIdRef[0]) fetchActivities(entityIdRef[0]) }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
   }, [])
 
   const filtered = useMemo(() => {
@@ -211,6 +228,14 @@ export default function AnalyticsPage() {
               </SelectContent>
             </Select>
           )}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="p-2 rounded-lg border bg-white text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition-colors"
+            title="Atualizar dados"
+          >
+            <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
+          </button>
           {/* Period selector + navigation — same style as Dashboard */}
           <div className="flex items-center bg-white border rounded-xl overflow-hidden shadow-sm">
             {(['month','week','year'] as Period[]).map(p => (
