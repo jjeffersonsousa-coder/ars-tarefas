@@ -91,6 +91,17 @@ export function Checklist({ activityId, items: initialItems, canEdit = false, on
     const newCompleted = !item.completed
     await supabase.from('checklist_items').update({ completed: newCompleted }).eq('id', item.id)
     setItems(prev => prev.map(i => i.id === item.id ? { ...i, completed: newCompleted } : i))
+    // Registrar no histórico
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await (supabase as any).from('activity_history').insert({
+        activity_id: activityId,
+        user_id: user.id,
+        field_changed: 'checklist_item',
+        old_value: newCompleted ? 'pendente' : 'concluido',
+        new_value: item.text,
+      })
+    }
     onUpdate?.()
   }
 

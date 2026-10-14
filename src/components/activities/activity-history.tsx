@@ -1,7 +1,7 @@
 import { ActivityHistory as ActivityHistoryType } from '@/lib/types'
 import { formatDateTime, getInitials } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Clock } from 'lucide-react'
+import { Clock, CheckSquare, RotateCcw } from 'lucide-react'
 
 interface ActivityHistoryProps {
   history: ActivityHistoryType[]
@@ -19,6 +19,7 @@ const fieldLabels: Record<string, string> = {
   due_date: 'Vencimento',
   follow_up_date: 'Follow-up',
   created: 'Criação',
+  checklist_item: 'Checklist',
 }
 
 const statusLabels: Record<string, string> = {
@@ -87,6 +88,18 @@ export function ActivityHistoryLog({ history }: ActivityHistoryProps) {
             </div>
             {entry.field_changed === 'created' ? (
               <p className="text-sm text-gray-600 mt-0.5">Atividade criada</p>
+            ) : entry.field_changed === 'checklist_item' ? (
+              <div className="flex items-start gap-1.5 mt-0.5">
+                {entry.old_value === 'pendente' ? (
+                  <CheckSquare className="h-3.5 w-3.5 text-green-600 shrink-0 mt-0.5" />
+                ) : (
+                  <RotateCcw className="h-3.5 w-3.5 text-orange-500 shrink-0 mt-0.5" />
+                )}
+                <p className="text-sm text-gray-600">
+                  {entry.old_value === 'pendente' ? 'Concluiu item: ' : 'Reabriu item: '}
+                  <span className="font-medium text-gray-800">{entry.new_value}</span>
+                </p>
+              </div>
             ) : (
               <p className="text-sm text-gray-600 mt-0.5">
                 Alterou{' '}
