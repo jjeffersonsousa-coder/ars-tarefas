@@ -122,8 +122,8 @@ export function ActivityDetail({
         </Button>
       </div>
 
-      <div className="bg-white rounded-lg border p-6">
-        <div className="flex items-start justify-between gap-4">
+      <div className="bg-white rounded-lg border p-4 sm:p-6">
+        <div className="flex flex-col gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center flex-wrap gap-2 mb-2">
               <Badge className={cn('border text-xs', PRIORITY_COLORS[activity.priority])}>
@@ -139,12 +139,12 @@ export function ActivityDetail({
                 </span>
               )}
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">{activity.title}</h1>
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-900 break-words">{activity.title}</h1>
             {activity.context && (
               <p className="text-sm text-indigo-600 mt-1 font-medium">{activity.context}</p>
             )}
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 flex-wrap">
             {shareToken ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -209,7 +209,7 @@ export function ActivityDetail({
 
         <Separator className="my-4" />
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           {activity.start_date && (
             <div>
               <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
