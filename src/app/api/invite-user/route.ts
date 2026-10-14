@@ -28,7 +28,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
-  const { data: profile } = await adminClient
+  // Read profile using user's own client (guaranteed read permission on own row)
+  const { data: profile } = await userClient
     .from('user_profiles').select('role, entity_id').eq('id', user.id).single()
 
   const isSuperAdmin = profile?.role === 'super_admin'
