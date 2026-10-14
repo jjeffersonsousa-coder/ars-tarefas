@@ -53,7 +53,13 @@ export default function SharePage() {
         .select('*')
         .eq('activity_id', act.id)
         .order('order_index')
-      setChecklist((cl || []) as ChecklistItem[])
+      const sorted = ((cl || []) as ChecklistItem[]).sort((a, b) => {
+        if (a.due_date && b.due_date) return a.due_date < b.due_date ? -1 : 1
+        if (a.due_date) return -1
+        if (b.due_date) return 1
+        return a.order_index - b.order_index
+      })
+      setChecklist(sorted)
 
       setLoading(false)
     }
