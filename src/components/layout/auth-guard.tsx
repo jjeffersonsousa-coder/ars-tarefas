@@ -40,6 +40,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         setLoading(false)
         return
       }
+      // Check if user is approved (super_admin is never blocked)
+      if ((p as UserProfile).role !== 'super_admin' && (p as UserProfile).is_approved === false) {
+        router.replace('/pending-approval')
+        return
+      }
+
       // Check if company is active (super_admin is never blocked)
       if ((p as UserProfile).role !== 'super_admin' && (p as UserProfile).entity_id) {
         const { data: entity } = await (supabase as any)

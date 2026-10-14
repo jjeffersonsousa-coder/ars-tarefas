@@ -77,8 +77,7 @@ function RegisterForm() {
       return
     }
 
-    router.push('/dashboard')
-    router.refresh()
+    router.push('/pending-approval')
   }
 
   return (

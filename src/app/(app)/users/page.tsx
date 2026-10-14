@@ -391,9 +391,27 @@ export default function UsersPage() {
     toast.success('Cargo atualizado!')
   }
 
+  async function approveUser(userId: string) {
+    setUpdatingId(userId)
+    await (supabase as any).from('user_profiles').update({ is_approved: true }).eq('id', userId)
+    setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, is_approved: true } : u))
+    setUpdatingId(null)
+    toast.success('Usuário aprovado!', { description: 'O usuário já pode acessar o sistema.' })
+  }
+
+  async function rejectUser(userId: string) {
+    if (!confirm('Tem certeza que deseja recusar e remover este usuário?')) return
+    setUpdatingId(userId)
+    await (supabase as any).from('user_profiles').delete().eq('id', userId)
+    setUsers((prev) => prev.filter((u) => u.id !== userId))
+    setUpdatingId(null)
+    toast.success('Usuário removido.')
+  }
+
   const isAdmin = profile?.role === 'super_admin' || profile?.role === 'admin'
 
   const filtered = users.filter((u) => {
+    if (u.is_approved === false) return false
     const matchSearch = !search || u.full_name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()) || (u.cargo ?? '').toLowerCase().includes(search.toLowerCase())
     const matchRole = filterRole === 'all' || u.role === filterRole
     const matchDept = filterDept === 'all' || (userDepts[u.id] || []).some(ud => ud.department_id === filterDept)
@@ -448,6 +466,53 @@ export default function UsersPage() {
           <Filter className="h-3.5 w-3.5" />{filtered.length} de {users.length} usuários
         </p>
       </div>
+
+      {/* Usuários aguardando aprovação */}
+      {isAdmin && users.filter(u => u.is_approved === false).length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-blue-200">
+            <Clock className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-semibold text-blue-800">
+              Aguardando aprovação ({users.filter(u => u.is_approved === false).length})
+            </span>
+            <span className="text-xs text-blue-600 ml-auto">Usuários que se cadastraram e aguardam liberação</span>
+          </div>
+          <div className="divide-y divide-blue-100">
+            {users.filter(u => u.is_approved === false).map((u) => (
+              <div key={u.id} className="flex items-center gap-3 px-4 py-3">
+                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-xs font-bold text-blue-600">
+                  {getInitials(u.full_name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">{u.full_name}</p>
+                  <p className="text-xs text-gray-500 truncate">{u.email}</p>
+                </div>
+                <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200 shrink-0">
+                  Pendente
+                </span>
+                <Button
+                  size="sm"
+                  disabled={updatingId === u.id}
+                  onClick={() => approveUser(u.id)}
+                  className="h-7 rounded-lg text-xs gap-1.5 bg-green-600 hover:bg-green-700 text-white shrink-0"
+                >
+                  {updatingId === u.id ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                  Aprovar
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={updatingId === u.id}
+                  onClick={() => rejectUser(u.id)}
+                  className="h-7 rounded-lg text-xs gap-1.5 border-red-300 text-red-600 hover:bg-red-50 shrink-0"
+                >
+                  Recusar
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Convites pendentes */}
       {isAdmin && pendingInvites.length > 0 && (

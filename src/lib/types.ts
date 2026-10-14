@@ -35,6 +35,7 @@ export interface UserProfile {
   cargo?: string | null
   avatar_url?: string | null
   department_id?: string | null
+  is_approved?: boolean
   created_at: string
   updated_at: string
 }
