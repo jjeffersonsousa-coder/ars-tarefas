@@ -45,6 +45,7 @@ export function ActivityDetail({
   currentUserId,
 }: ActivityDetailProps) {
   const canEdit = ['super_admin', 'admin', 'gestor', 'editor'].includes(userRole)
+  const canDelete = ['super_admin', 'admin'].includes(userRole)
   const supabase = createClient()
   const [notes, setNotes] = useState(activity.rich_notes ?? '')
   const [editingNotes, setEditingNotes] = useState(false)
@@ -54,6 +55,8 @@ export function ActivityDetail({
   const [copied, setCopied] = useState(false)
   const [currentStatus, setCurrentStatus] = useState(activity.status)
   const [completingStatus, setCompletingStatus] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   async function shareActivity() {
     setSharing(true)
@@ -98,6 +101,21 @@ export function ActivityDetail({
       toast.success(newStatus === 'concluida' ? 'Atividade concluída!' : 'Atividade reaberta.')
     }
     setCompletingStatus(false)
+  }
+
+  async function deleteActivity() {
+    setDeleting(true)
+    const { error } = await supabase
+      .from('activities')
+      .delete()
+      .eq('id', activity.id)
+    if (error) {
+      toast.error('Erro ao excluir atividade')
+      setDeleting(false)
+    } else {
+      toast.success('Atividade excluída.')
+      window.location.href = '/activities'
+    }
   }
 
   async function saveNotes() {
@@ -200,8 +218,51 @@ export function ActivityDetail({
                 </Link>
               </Button>
             )}
+            {canDelete && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="border-red-300 text-red-600 hover:bg-red-50 gap-1.5"
+              >
+                <Trash2 className="h-4 w-4" />
+                Excluir
+              </Button>
+            )}
           </div>
         </div>
+
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-lg font-semibold text-gray-900">Excluir atividade</h2>
+                <p className="text-sm text-gray-500">
+                  Tem certeza que deseja excluir <span className="font-medium text-gray-700">"{activity.title}"</span>? Esta ação não pode ser desfeita.
+                </p>
+              </div>
+              <div className="flex gap-3 justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={deleteActivity}
+                  disabled={deleting}
+                  className="bg-red-600 hover:bg-red-700 text-white gap-1.5"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {deleting ? 'Excluindo...' : 'Excluir'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {activity.description && (
           <p className="text-gray-700 mt-4 text-sm leading-relaxed">{activity.description}</p>
