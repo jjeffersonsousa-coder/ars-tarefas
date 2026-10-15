@@ -238,7 +238,7 @@ export function ActivityDetail({
               <div className="flex flex-col gap-1">
                 <h2 className="text-lg font-semibold text-gray-900">Excluir atividade</h2>
                 <p className="text-sm text-gray-500">
-                  Tem certeza que deseja excluir <span className="font-medium text-gray-700">"{activity.title}"</span>? Esta ação não pode ser desfeita.
+                  Tem certeza que deseja excluir <span className="font-medium text-gray-700">&quot;{activity.title}&quot;</span>? Esta ação não pode ser desfeita.
                 </p>
               </div>
               <div className="flex gap-3 justify-end">
