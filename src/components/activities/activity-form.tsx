@@ -566,8 +566,8 @@ export function ActivityForm({ activity, entityId, userId, userDepartmentId, use
 
       {/* Recurring scope modal */}
       {recurringModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4 space-y-4">
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4 mb-safe">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
                 <RefreshCw className="h-5 w-5 text-indigo-600" />
