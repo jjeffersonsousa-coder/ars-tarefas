@@ -36,7 +36,11 @@ export default function EntitiesPage() {
       if (!user) return
       const { data: p } = await supabase.from('user_profiles').select('*').eq('id', user.id).single()
       if (p) setProfile(p as UserProfile)
-      const { data: ents } = await supabase.from('entities').select('*').order('name')
+      const isSuperAdminOrAdmin = p?.role === 'super_admin' || p?.role === 'admin'
+      const query = supabase.from('entities').select('*').order('name')
+      const { data: ents } = isSuperAdminOrAdmin
+        ? await query
+        : await query.eq('id', p?.entity_id || '')
       if (ents) setEntities(ents as Entity[])
       setLoading(false)
     }

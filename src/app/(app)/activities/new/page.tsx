@@ -19,7 +19,7 @@ export default function NewActivityPage() {
       if (!user) { router.replace('/login'); return }
       const { data: p } = await supabase.from('user_profiles').select('*').eq('id', user.id).single()
       if (!p) { router.replace('/login'); return }
-      if (p.role !== 'admin' && p.role !== 'editor') { router.replace('/activities'); return }
+      if (!['super_admin', 'admin', 'gestor', 'editor'].includes(p.role)) { router.replace('/activities'); return }
       setProfile(p as UserProfile)
       setLoading(false)
     }
